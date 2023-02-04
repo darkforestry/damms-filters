@@ -12,14 +12,3 @@ use num_bigfloat::BigFloat;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::{collections::HashSet, sync::Arc};
-
-pub fn get_tokens_from_pool(pool: &Pool) -> Vec<H160> {
-    match pool {
-        Pool::UniswapV2(pool) => {
-            vec![pool.token_a, pool.token_b]
-        }
-        Pool::UniswapV3(pool) => {
-            vec![pool.token_a, pool.token_b]
-        }
-    }
-}

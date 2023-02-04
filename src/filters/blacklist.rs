@@ -3,8 +3,6 @@ use std::collections::HashSet;
 use cfmms::pool::Pool;
 use ethers::types::H160;
 
-use super::get_tokens_from_pool;
-
 //Filters out pools where the blacklisted address is the token_a address or token_b address
 pub fn filter_blacklisted_tokens(pools: Vec<Pool>, blacklisted_addresses: Vec<H160>) -> Vec<Pool> {
     let mut filtered_pools = vec![];
@@ -66,4 +64,15 @@ pub fn filter_blacklisted_addresses(
     }
 
     filtered_pools
+}
+
+pub fn get_tokens_from_pool(pool: &Pool) -> Vec<H160> {
+    match pool {
+        Pool::UniswapV2(pool) => {
+            vec![pool.token_a, pool.token_b]
+        }
+        Pool::UniswapV3(pool) => {
+            vec![pool.token_a, pool.token_b]
+        }
+    }
 }
