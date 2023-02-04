@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     //Sync pools
-    let pools = sync::sync_pairs_with_throttle(dexes.clone(), provider.clone(), 10, None).await?;
+    let pools = sync::sync_pairs_with_throttle(dexes.clone(), provider.clone(), 5, None).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
@@ -40,23 +40,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         blacklisted_tokens,
     );
 
-    //UniswapV2 usdc weth pool on Eth mainnet
-    let _uniswap_v2_usdc_weth_pool = Pool::UniswapV2(
-        UniswapV2Pool::new_from_address(
-            H160::from_str("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc").unwrap(),
-            provider.clone(),
-        )
-        .await?,
-    );
-
     let weth_address = H160::from_str("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").unwrap();
     let usdc_address = H160::from_str("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").unwrap();
     let usd_weth_pair_address =
-        H160::from_str("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").unwrap();
+        H160::from_str("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc").unwrap();
 
     let usd_weth_pool = Pool::UniswapV2(
         UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,
     );
+
+    println!("Filtering pools below usd threshold");
 
     let _filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
         filtered_pools,
