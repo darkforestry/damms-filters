@@ -35,7 +35,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![H160::from_str("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984").unwrap()];
 
     //Filter out blacklisted tokens
-    let filtered_pools = filter_blacklisted_tokens(pools, blacklisted_tokens);
+    let filtered_pools = cfmms_pool_filters::filters::blacklist::filter_blacklisted_tokens(
+        pools,
+        blacklisted_tokens,
+    );
 
     //UniswapV2 usdc weth pool on Eth mainnet
     let _uniswap_v2_usdc_weth_pool = Pool::UniswapV2(
@@ -55,7 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,
     );
 
-    let _filtered_pools = filter::filter_pools_below_usd_threshold_with_throttle(
+    let _filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
         filtered_pools,
         dexes,
         usd_weth_pool,
@@ -65,7 +68,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than 2 eth
         2000000000000000000_u128,
         provider.clone(),
-        10,
     )
     .await?;
 
