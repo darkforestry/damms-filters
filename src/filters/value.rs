@@ -64,6 +64,11 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
 
                     0.0
                 }
+
+                CFMMError::PoolDataError => {
+                    println!("PoolDataError");
+                    0.0
+                }
                 _ => return Err(pair_sync_error),
             },
         };
@@ -162,6 +167,16 @@ async fn get_price_of_token_per_weth<M: Middleware>(
     Ok(token_price_per_weth?)
 }
 
+//TODO:FIXME:
+
+// basically to get the value of a pool in usd, we need to get the pool's value in weth, then multiply that by the price of usd per weth
+//So really we only need to create a batch function to get value of weth in the pool
+//To do this, we can create a constructor that takes in any amount of dexes, v2 or v3.
+// Then if the token in the pool is weth, we record that value. If the token is not weth, we search each of the dexes for a pair for the token/weth. Once we find all the token/weth pairs, we get the one with the best liquidity
+//Then we calculate calculate the price of token/weth. We then use exchange rate and multiply the amount of the token in the pool to get the amount of weth in the pool. Then we add the amount of weth in the pool to a list and after iterating
+//Through a certain amount of pools (whatever the max is), we return the list. Then offchain, we simply multiply the returned value by the price of weth/usd which gives us the value of the pool in usd.
+
+//TODO: batch this
 async fn get_weth_value_in_pool<M: Middleware>(
     pool: &Pool,
     weth_address: H160,

@@ -25,6 +25,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             DexVariant::UniswapV3,
             12369621,
         ),
+        Dex::new(
+            H160::from_str("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f").unwrap(),
+            DexVariant::UniswapV2,
+            2638438,
+        ),
+        //Add Sushiswap
+        Dex::new(
+            H160::from_str("0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac").unwrap(),
+            DexVariant::UniswapV2,
+            10794229,
+        ),
     ];
 
     //Sync pools
@@ -35,10 +46,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![H160::from_str("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984").unwrap()];
 
     //Filter out blacklisted tokens
-    let filtered_pools = cfmms_pool_filters::filters::blacklist::filter_blacklisted_tokens(
-        pools,
-        blacklisted_tokens,
-    );
+    let filtered_pools =
+        cfmms_pool_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
 
     let weth_address = H160::from_str("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").unwrap();
     let usdc_address = H160::from_str("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").unwrap();

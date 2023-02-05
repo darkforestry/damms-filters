@@ -1,7 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use cfmms::pool::Pool;
 use ethers::types::H160;
+use regex::Regex;
+use reqwest::Error;
 
 //Filters out pools where the blacklisted address is the token_a address or token_b address
 pub fn filter_blacklisted_tokens(pools: Vec<Pool>, blacklisted_addresses: Vec<H160>) -> Vec<Pool> {
@@ -76,3 +78,28 @@ pub fn get_tokens_from_pool(pool: &Pool) -> Vec<H160> {
         }
     }
 }
+
+// //Filters only pools that contain tokens from https://tokenlists.org/
+// pub async fn filter_token_list_tokens(pools: Vec<Pool>) -> Result<Vec<Pool>, reqwest::Error> {
+//     let mut filtered_pools = vec![];
+
+//     //There is a better way to do this but this is fine and it only runs once
+//     //This is also kind of hacky but it will work
+//     //We get the json as a string then extract all of the addresses using regex, then once we have accumulated all of the addresses
+//     //We can filter the list
+//     let token_list_endpoints = vec!["", ""];
+
+//     let mut token_list_addresses = vec![];
+
+//     for endpoint in token_list_endpoints {
+//         let resp = reqwest::get(endpoint).await?.json::<String>().await?;
+//         let pattern = regex::Regex::new(r"\d+").unwrap();
+//         // iterate over all matches
+//         let endpoint_addresses = pattern
+//             .find_iter(&resp)
+//             .filter_map(|address| address.as_str().parse::<H160>().ok())
+//             .collect::<Vec<H160>>();
+
+//     }
+//     Ok(filtered_pools)
+// }
