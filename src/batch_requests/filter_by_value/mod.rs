@@ -10,14 +10,13 @@ use std::sync::Arc;
 abigen!(
     GetWethValueInPoolBatchRequest,
     "src/batch_requests/filter_by_value/GetWethValueInPoolBatchRequest.json";
-
 );
 
 pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
     pools: &[Pool],
     dexes: &[Dex],
     weth: H160,
-    weth_in_pool_threshold: U256,
+    weth_value_in_token_to_weth_pool_threshold: U256,
     middleware: Arc<M>,
 ) -> Result<Vec<U256>, cfmms::errors::CFMMError<M>> {
     let mut weth_values_in_pools = vec![];
@@ -45,7 +44,7 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
         Token::Array(dexes),
         Token::Array(dex_is_uni_v3),
         Token::Address(weth),
-        Token::Uint(weth_in_pool_threshold),
+        Token::Uint(weth_value_in_token_to_weth_pool_threshold),
     ]);
 
     let deployer = GetWethValueInPoolBatchRequest::deploy(middleware, constructor_args).unwrap();

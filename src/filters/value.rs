@@ -17,18 +17,35 @@ use crate::batch_requests;
 #[allow(clippy::too_many_arguments)]
 pub async fn filter_pools_below_usd_threshold<M: Middleware>(
     pools: Vec<Pool>,
-    dexes: Vec<Dex>,
-    usd_weth_pool: Pool,
-    usd_address: H160,
-    weth_address: H160,
-    usd_threshold: f64,
-    token_weth_pool_min_weth_threshold: u128,
+    dexes: &[Dex],
+    usd_weth_pool: Pool, //TODO: could make this f64 and just pass in price?
+    usd_value_in_pool_threshold: f64, // This is the threshold where we will filter out any pool with less value than this
+    weth: H160,
+    weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
     middleware: Arc<M>,
 ) -> Result<Vec<Pool>, CFMMError<M>> {
-    //Get all pools
+    let weth_usd_price = usd_weth_pool.calculate_price(weth)?;
 
     //Init a new vec to hold the filtered pools
     let mut filtered_pools = vec![];
+
+    let weth_values_in_pools = get_weth_values_in_pools(
+        &pools,
+        dexes,
+        weth,
+        weth_value_in_token_to_weth_pool_threshold,
+        middleware,
+    )
+    .await?;
+
+    let mut i = 0;
+    for weth_value in weth_values_in_pools {
+        if weth_value * weth_usd_price >= usd_value_in_pool_threshold {
+            filtered_pools.push(pools[i]);
+        }
+
+        i += 1;
+    }
 
     Ok(filtered_pools)
 }
@@ -40,17 +57,24 @@ pub async fn filter_pools_below_weth_threshold<M: Middleware>(
     pools: Vec<Pool>,
     dexes: &[Dex],
     weth: H160,
-    weth_in_pool_threshold: U256,
+    weth_value_in_pool_threshold: U256, // This is the threshold where we will filter out any pool with less value than this
+    weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
     middleware: Arc<M>,
 ) -> Result<Vec<Pool>, CFMMError<M>> {
     let mut filtered_pools = vec![];
 
-    let weth_values_in_pools =
-        get_weth_values_in_pools(&pools, dexes, weth, weth_in_pool_threshold, middleware).await?;
+    let weth_values_in_pools = get_weth_values_in_pools(
+        &pools,
+        dexes,
+        weth,
+        weth_value_in_token_to_weth_pool_threshold,
+        middleware,
+    )
+    .await?;
 
     let mut i = 0;
     for weth_value in weth_values_in_pools {
-        if weth_value >= weth_in_pool_threshold {
+        if weth_value >= weth_value_in_pool_threshold {
             filtered_pools.push(pools[i]);
         }
 
@@ -64,7 +88,7 @@ pub async fn get_weth_values_in_pools<M: Middleware>(
     pools: &[Pool],
     dexes: &[Dex],
     weth: H160,
-    weth_in_pool_threshold: U256,
+    weth_value_in_token_to_weth_pool_threshold: U256,
     middleware: Arc<M>,
 ) -> Result<Vec<U256>, CFMMError<M>> {
     let multi_progress_bar = MultiProgress::new();
@@ -95,7 +119,7 @@ pub async fn get_weth_values_in_pools<M: Middleware>(
                 &pools[idx_from..idx_to],
                 dexes,
                 weth,
-                weth_in_pool_threshold,
+                weth_value_in_token_to_weth_pool_threshold,
                 middleware.clone(),
             )
             .await?;
