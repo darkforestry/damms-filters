@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-contract BatchGetWethValueInPool {
+contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
     address internal constant ADDRESS_ZERO = address(0);
 
@@ -285,8 +285,7 @@ contract BatchGetWethValueInPool {
         address token0,
         address token1
     ) internal view returns (uint256 r_0, uint256 r_1) {
-        (uint160 sqrtPriceX96, int24 tick, , , , , ) = IUniswapV3PoolState(pool)
-            .slot0();
+        (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
         uint128 liquidity = IUniswapV3PoolState(pool).liquidity();
 
         uint128 sqrtPriceQ640 = fromSqrtX96(
