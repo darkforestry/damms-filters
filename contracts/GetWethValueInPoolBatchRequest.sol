@@ -50,12 +50,12 @@ contract GetWethValueInPoolBatchRequest {
         // note: abi.encode add a first 32 bytes word with the address of the original data
         bytes memory abiEncodedData = abi.encode(wethValueInPools);
 
-        assembly {
-            // Return from the start of the data (discarding the original data address)
-            // up to the end of the memory used
-            let dataStart := add(abiEncodedData, 0x20)
-            return(dataStart, sub(msize(), dataStart))
-        }
+        // assembly {
+        //     // Return from the start of the data (discarding the original data address)
+        //     // up to the end of the memory used
+        //     let dataStart := add(abiEncodedData, 0x20)
+        //     return(dataStart, sub(msize(), dataStart))
+        // }
     }
 
     ///TODO: write a doc comment describing what wethInPoolThreshold is
@@ -186,7 +186,7 @@ contract GetWethValueInPoolBatchRequest {
             r_x = r_x_112;
             r_y = r_y_112;
         } else {
-            (r_x, r_y) = calculateV3VirtualReserves(lp, token0, token1);
+            (r_x, r_y) = calculateV3VirtualReserves(lp);
         }
 
         return
@@ -220,11 +220,7 @@ contract GetWethValueInPoolBatchRequest {
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
         bool tokenIsToken0 = token < weth;
-        (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(
-            pool,
-            token,
-            weth
-        );
+        (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
 
         if (tokenIsToken0) {
             if (r_0 < wethLiquidityThreshold) {
@@ -280,31 +276,33 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     ///Does not normalize to 18 decimals
-    function calculateV3VirtualReserves(
-        address pool,
-        address token0,
-        address token1
-    ) internal view returns (uint256 r_0, uint256 r_1) {
+    function calculateV3VirtualReserves(address pool)
+        internal
+        view
+        returns (uint256 r_0, uint256 r_1)
+    {
         (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
         uint128 liquidity = IUniswapV3PoolState(pool).liquidity();
+        unchecked {
+            uint256 sqrtPriceInv = ((2**192) / sqrtPriceX96);
 
-        uint128 sqrtPriceQ640 = fromSqrtX96(
-            sqrtPriceX96,
-            token0 < token1,
-            token0,
-            token1
-        );
-        uint128 sqrtPriceQ641 = fromSqrtX96(
-            sqrtPriceX96,
-            token0 < token1,
-            token1,
-            token0
-        );
+            uint256 lo_r0 = (uint256(sqrtPriceInv) *
+                (uint256(liquidity) & (2**64))) >> 96;
+            uint256 hi_r0 = (uint256(sqrtPriceInv) *
+                (uint256(liquidity) >> 96));
+            uint256 lo_r1 = (uint256(sqrtPriceX96) *
+                (uint256(liquidity) & (2**64))) >> 96;
+            uint256 hi_r1 = (uint256(sqrtPriceX96) *
+                (uint256(liquidity) >> 96));
 
-        (r_0, r_1) = (
-            mul64U(sqrtPriceQ640, liquidity),
-            mul64U(sqrtPriceQ641, liquidity)
-        );
+            hi_r0 <<= 96;
+            hi_r1 <<= 96;
+
+            require(hi_r0 <= type(uint128).max);
+            require(hi_r1 <= type(uint128).max);
+
+            (r_0, r_1) = (hi_r0 + lo_r0, hi_r1 + lo_r1);
+        }
     }
 
     /// @notice helper to divide two unsigned integers
@@ -398,41 +396,6 @@ contract GetWethValueInPoolBatchRequest {
                         lo
             );
             return hi + lo;
-        }
-    }
-
-    ///@notice Function to convers a SqrtPrice Q96.64 fixed point to Price as 128.128 fixed point resolution.
-    ///@dev token0 is token0 on the pool, and token1 is token1 on the pool. Not tokenIn,tokenOut on the swap.
-    ///@param sqrtPriceX96 The slot0 sqrtPriceX96 on the pool.
-    ///@param token0IsReserve0 Bool indicating whether the tokenIn to be quoted is token0 on the pool.
-    ///@param token0 Token0 in the pool.
-    ///@param token1 Token1 in the pool.
-    ///@return sqrtPriceQ64 The sqrt spot price of TokenIn as Q64.
-    function fromSqrtX96(
-        uint160 sqrtPriceX96,
-        bool token0IsReserve0,
-        address token0,
-        address token1
-    ) internal view returns (uint128 sqrtPriceQ64) {
-        unchecked {
-            ///@notice Cache the difference between the input and output token decimals. p=y/x ==> p*10**(x_decimals-y_decimals)>>Q192 will be the proper price in base 10.
-            int8 decimalShift = int8(IERC20(token0).decimals()) -
-                int8(IERC20(token1).decimals());
-            ///@notice Square the sqrtPrice ratio and normalize the value based on decimalShift.
-            uint256 sqrtNormalizedX96 = decimalShift < 0
-                ? uint256(sqrtPriceX96) / uint256(10)**(uint8(-decimalShift))
-                : uint256(sqrtPriceX96) * 10**uint8(decimalShift);
-
-            ///@notice The first value is a Q96 representation of p_token0, the second is 128X fixed point representation of p_token1.
-            sqrtPriceQ64 = token0IsReserve0
-                ? uint128(sqrtNormalizedX96 >> 32)
-                : 0xffffffffffffffff / uint128(sqrtNormalizedX96 >> 32);
-
-            ///Ensure the result fits into a u128.
-            require(
-                sqrtPriceQ64 <= 0xffffffffffffffffffffffffffffffff,
-                "Overflow in fromSqrtX96"
-            );
         }
     }
 
