@@ -200,10 +200,10 @@ contract GetWethValueInPoolBatchRequest {
         uint8 decimals_y
     ) internal pure returns (uint256 r_x, uint256 r_y) {
         r_x = decimals_x <= 18
-            ? x*10**(18 - decimals_x)
+            ? x*(10**(18 - decimals_x))
             : x / (10**(decimals_x - 18));
         r_y = decimals_y <= 18
-            ? y*10**(18 - decimals_y)
+            ? y*(10**(18 - decimals_y))
             : y / (10**(decimals_y - 18));
     }
 
