@@ -33,6 +33,7 @@ contract GetWethValueInPoolBatchRequest {
                 dexIsUniV3,
                 wethInPoolThreshold
             );
+
             uint256 token1WethValueInPool = getWethValueOfTokenInPool(
                 token1,
                 weth,

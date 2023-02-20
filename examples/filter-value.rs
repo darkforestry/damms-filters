@@ -20,12 +20,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let provider = Arc::new(Provider::<Http>::try_from(rpc_endpoint).unwrap());
 
     let dexes = vec![
-        //Add UniswapV3
-        Dex::new(
-            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-            DexVariant::UniswapV3,
-            12369621,
-        ),
+        // //Add UniswapV3
+        // Dex::new(
+        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+        //     DexVariant::UniswapV3,
+        //     12369621,
+        // ),
         // Dex::new(
         //     H160::from_str("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f").unwrap(),
         //     DexVariant::UniswapV2,
