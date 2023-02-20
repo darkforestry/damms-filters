@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import "./test.sol";
 
 contract GasTest is DSTest {
-    function setUp() public {
+    function setUp() public {}
+
+    function testBatchContract() public {
         address[] memory pools = new address[](3);
         pools[0] = 0xAa1656B7d4629476Fa4CF76CCfBc01a4653bAc71;
         pools[1] = 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc;
