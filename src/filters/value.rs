@@ -13,6 +13,9 @@ use num_bigfloat::BigFloat;
 
 use crate::batch_requests;
 
+pub const U256_10_POW_18: U256 = U256([1000000000000000000, 0, 0, 0]);
+pub const U256_10_POW_6: U256 = U256([1000000, 0, 0, 0]);
+
 //Filter that removes pools with that contain less than a specified usd value
 #[allow(clippy::too_many_arguments)]
 pub async fn filter_pools_below_usd_threshold<M: Middleware>(
@@ -40,7 +43,9 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
 
     let mut i = 0;
     for weth_value in weth_values_in_pools {
-        if weth_value * weth_usd_price >= usd_value_in_pool_threshold {
+        if (weth_value / U256_10_POW_18).as_u64() as f64 * weth_usd_price
+            >= usd_value_in_pool_threshold
+        {
             filtered_pools.push(pools[i]);
         }
 
@@ -52,7 +57,6 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
 
 //Filter that removes pools with that contain less than a specified weth value
 //
-
 pub async fn filter_pools_below_weth_threshold<M: Middleware>(
     pools: Vec<Pool>,
     dexes: &[Dex],
@@ -113,6 +117,7 @@ pub async fn get_weth_values_in_pools<M: Middleware>(
         step
     };
 
+    //TODO: see if you can just step by the pools rather than some index
     for _ in (0..pools.len()).step_by(step) {
         let weth_values_in_pools =
             batch_requests::filter_by_value::get_weth_value_in_pool_batch_request(

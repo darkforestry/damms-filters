@@ -50,12 +50,12 @@ contract GetWethValueInPoolBatchRequest {
         // note: abi.encode add a first 32 bytes word with the address of the original data
         bytes memory abiEncodedData = abi.encode(wethValueInPools);
 
-        // assembly {
-        //     // Return from the start of the data (discarding the original data address)
-        //     // up to the end of the memory used
-        //     let dataStart := add(abiEncodedData, 0x20)
-        //     return(dataStart, sub(msize(), dataStart))
-        // }
+        assembly {
+            // Return from the start of the data (discarding the original data address)
+            // up to the end of the memory used
+            let dataStart := add(abiEncodedData, 0x20)
+            return(dataStart, sub(msize(), dataStart))
+        }
     }
 
     ///TODO: write a doc comment describing what wethInPoolThreshold is
@@ -67,30 +67,40 @@ contract GetWethValueInPoolBatchRequest {
         bool[] memory dexIsUniV3,
         uint256 wethInPoolThreshold
     ) internal returns (uint256) {
-        for (uint256 i = 0; i < dexes.length; ++i) {
-            uint256 wethValueInPool = _getWethValueOfTokenInPool(
-                token,
-                weth,
-                amount,
-                dexes[i],
-                dexIsUniV3[i],
-                wethInPoolThreshold
-            );
+        uint128 tokenToWethPrice = tokenToWethPrices[token];
 
-            if (wethValueInPool != 0) {
-                return wethValueInPool;
+        if (tokenToWethPrice == 1) {
+            return 0;
+        } else {
+            for (uint256 i = 0; i < dexes.length; ++i) {
+                uint256 wethValueInPool = _getWethValueOfTokenInPool(
+                    token,
+                    weth,
+                    amount,
+                    tokenToWethPrice,
+                    dexes[i],
+                    dexIsUniV3[i],
+                    wethInPoolThreshold
+                );
+
+                if (wethValueInPool != 0) {
+                    return wethValueInPool;
+                }
             }
-        }
 
-        return 0;
+            //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
+            tokenToWethPrices[token] = 1;
+            return 0;
+        }
     }
 
     function _getWethValueOfTokenInPool(
         address token,
         address weth,
         uint256 amount,
+        uint128 tokenToWethPrice,
         address dexFactory,
-        bool isUniV2,
+        bool isUniV3,
         uint256 wethInPoolThreshold
     ) internal returns (uint256) {
         //If the token is weth, the amount is the amount of weth in the pool for that token
@@ -98,15 +108,13 @@ contract GetWethValueInPoolBatchRequest {
             return amount;
         }
 
-        //Check if the pool is univ3 or univ2
-        uint128 tokenToWethPrice = tokenToWethPrices[token];
-
-        if (tokenToWethPrice != 0) {
+        if (tokenToWethPrice > 1) {
             //Calculate the value of weth in the pool by using the amount passed in and the price that we derived
             return mul64U(tokenToWethPrice, amount);
         } else {
-            // ^^ if we dont already have the price cached, we need to get the price from a pool from one of the dexes
-            if (isUniV2) {
+            // ^^ if we dont already have the price cached, that means that the price is not initialized and
+            // we need to get the price from a pool from one of the dexes
+            if (isUniV3) {
                 uint16[3] memory feeTiers = [500, 3000, 10000];
                 for (uint256 j = 0; j < feeTiers.length; ++j) {
                     address pairAddress = IUniswapV3Factory(dexFactory).getPool(
@@ -115,7 +123,7 @@ contract GetWethValueInPoolBatchRequest {
                         feeTiers[j]
                     );
 
-                    if (pairAddress != address(0)) {
+                    if (pairAddress != ADDRESS_ZERO) {
                         ///Check here if the weth in pool threshold is met
 
                         uint256 wethValue = getTokenToWethValueV3(
@@ -139,32 +147,18 @@ contract GetWethValueInPoolBatchRequest {
                     tokenIsToken0 ? weth : token
                 );
 
-                (uint256 r_0, uint256 r_1) = getReserves(
-                    pairAddress,
-                    tokenIsToken0 ? token : weth,
-                    tokenIsToken0 ? weth : token
-                );
-
                 if (pairAddress != ADDRESS_ZERO) {
-                    //Check if the weth value meets the threshold
-                    if (tokenIsToken0) {
-                        if (r_0 < wethInPoolThreshold) {
-                            return 0;
-                        }
-                    } else {
-                        if (r_1 < wethInPoolThreshold) {
-                            return 0;
-                        }
-                    }
+                    uint256 wethValue = getTokenToWethValueV2(
+                        token,
+                        amount,
+                        weth,
+                        pairAddress,
+                        wethInPoolThreshold
+                    );
 
-                    return
-                        mul64U(
-                            divuu(
-                                tokenIsToken0 ? r_1 : r_0,
-                                tokenIsToken0 ? r_0 : r_1
-                            ),
-                            amount
-                        );
+                    if (wethValue != 0) {
+                        return wethValue;
+                    }
                 }
             }
         }
@@ -212,6 +206,42 @@ contract GetWethValueInPoolBatchRequest {
             : y / (10**(decimals_y - 18));
     }
 
+    function getTokenToWethValueV2(
+        address token,
+        uint256 tokenAmount,
+        address weth,
+        address pool,
+        uint256 wethLiquidityThreshold
+    ) internal returns (uint256) {
+        bool tokenIsToken0 = token < weth;
+
+        (uint256 r_0, uint256 r_1) = getReserves(
+            pool,
+            tokenIsToken0 ? token : weth,
+            tokenIsToken0 ? weth : token
+        );
+
+        //Check if the weth value meets the threshold
+        if (tokenIsToken0) {
+            if (r_0 < wethLiquidityThreshold) {
+                return 0;
+            }
+        } else {
+            if (r_1 < wethLiquidityThreshold) {
+                return 0;
+            }
+        }
+
+        uint128 price = divuu(
+            tokenIsToken0 ? r_1 : r_0,
+            tokenIsToken0 ? r_0 : r_1
+        );
+        //Add the price to the tokenToWeth price mapping
+        tokenToWethPrices[token] = price;
+
+        return mul64U(price, tokenAmount);
+    }
+
     function getTokenToWethValueV3(
         address token,
         uint256 tokenAmount,
@@ -240,41 +270,6 @@ contract GetWethValueInPoolBatchRequest {
         return mul64U(price, tokenAmount);
     }
 
-    function getTokenToWethValueV2(
-        address token,
-        uint256 tokenAmount,
-        address weth,
-        address[] memory dexes,
-        uint256 wethLiquidityThreshold
-    ) internal view returns (uint256 wethValue) {
-        bool tokenIsToken0 = token < weth;
-        //Iterate through each dex in dexes, and get the price of token in weth
-        //If the liquidity is sufficient break and return the price
-        for (uint256 i = 0; i < dexes.length; i++) {
-            address tokenToWethPool = IUniswapV2Factory(dexes[i]).getPair(
-                tokenIsToken0 ? token : weth,
-                tokenIsToken0 ? weth : token
-            );
-            if (tokenToWethPool != address(0)) {
-                (uint112 r_0, uint112 r_1, ) = IUniswapV2Pair(tokenToWethPool)
-                    .getReserves();
-
-                if (tokenIsToken0) {
-                    if (r_1 < wethLiquidityThreshold) continue;
-                } else {
-                    if (r_0 < wethLiquidityThreshold) continue;
-                }
-                uint128 price = divuu(
-                    tokenIsToken0 ? uint256(r_1) : uint256(r_0),
-                    tokenIsToken0 ? uint256(r_0) : uint256(r_1)
-                );
-
-                wethValue = mul64U(price, tokenAmount);
-                break;
-            }
-        }
-    }
-
     ///Does not normalize to 18 decimals
     function calculateV3VirtualReserves(address pool)
         internal
@@ -284,7 +279,7 @@ contract GetWethValueInPoolBatchRequest {
         (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
         uint128 liquidity = IUniswapV3PoolState(pool).liquidity();
         unchecked {
-            uint256 sqrtPriceInv = ((2**192) / sqrtPriceX96);
+            uint256 sqrtPriceInv = (Q96 / sqrtPriceX96);
 
             uint256 lo_r0 = (uint256(sqrtPriceInv) *
                 (uint256(liquidity) & (2**64))) >> 96;
