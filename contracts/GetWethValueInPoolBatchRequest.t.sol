@@ -1,6 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+contract GasTest is DSTest {
+    function setUp() public {
+        address[] memory pools = new address[](3);
+        //arg
+        //arg
+        //arg
+        //pool
+        //pool
+        //pool
+        GetWethValueInPoolBatchRequest();
+    }
+}
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.0;
+
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
     address internal constant ADDRESS_ZERO = address(0);
