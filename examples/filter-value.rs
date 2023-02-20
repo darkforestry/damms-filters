@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Filtering pools below usd threshold");
 
-    let _filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
+    let filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
         filtered_pools,
         &dexes,
         usd_weth_pool,
@@ -71,6 +71,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         provider.clone(),
     )
     .await?;
+
+    dbg!(filtered_pools);
 
     Ok(())
 }
