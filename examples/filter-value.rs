@@ -26,11 +26,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         //     DexVariant::UniswapV3,
         //     12369621,
         // ),
-        // Dex::new(
-        //     H160::from_str("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f").unwrap(),
-        //     DexVariant::UniswapV2,
-        //     2638438,
-        // ),
         //Add Sushiswap
         Dex::new(
             H160::from_str("0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac").unwrap(),
@@ -40,7 +35,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     //Sync pools
-    let pools = sync::sync_pairs_with_throttle(dexes.clone(), provider.clone(), 5, None).await?;
+    let pools =
+        sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 5, None).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
