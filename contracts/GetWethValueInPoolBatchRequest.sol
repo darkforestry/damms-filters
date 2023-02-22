@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
@@ -18,7 +19,10 @@ contract GetWethValueInPoolBatchRequest {
 
         for (uint256 i = 0; i < pools.length; ++i) {
             //Get the token0 and token1 from the pool
+            console.log(pools[i]);
+
             address token0 = IUniswapV2Pair(pools[i]).token0();
+
             address token1 = IUniswapV2Pair(pools[i]).token1();
 
             //Get the reserves from the pool
@@ -74,6 +78,7 @@ contract GetWethValueInPoolBatchRequest {
             return 0;
         } else {
             for (uint256 i = 0; i < dexes.length; ++i) {
+                console.log(dexes[i], dexIsUniV3[i]);
                 uint256 wethValueInPool = _getWethValueOfTokenInPool(
                     token,
                     weth,
@@ -115,6 +120,7 @@ contract GetWethValueInPoolBatchRequest {
         } else {
             // ^^ if we dont already have the price cached, that means that the price is not initialized and
             // we need to get the price from a pool from one of the dexes
+
             if (isUniV3) {
                 uint16[3] memory feeTiers = [500, 3000, 10000];
                 for (uint256 j = 0; j < feeTiers.length; ++j) {
@@ -200,10 +206,10 @@ contract GetWethValueInPoolBatchRequest {
         uint8 decimals_y
     ) internal pure returns (uint256 r_x, uint256 r_y) {
         r_x = decimals_x <= 18
-            ? x*(10**(18 - decimals_x))
+            ? x * (10**(18 - decimals_x))
             : x / (10**(decimals_x - 18));
         r_y = decimals_y <= 18
-            ? y*(10**(18 - decimals_y))
+            ? y * (10**(18 - decimals_y))
             : y / (10**(decimals_y - 18));
     }
 
@@ -251,6 +257,7 @@ contract GetWethValueInPoolBatchRequest {
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
         bool tokenIsToken0 = token < weth;
+
         (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
 
         if (tokenIsToken0) {
@@ -294,8 +301,8 @@ contract GetWethValueInPoolBatchRequest {
             hi_r0 <<= 96;
             hi_r1 <<= 96;
 
-            require(hi_r0 <= type(uint128).max);
-            require(hi_r1 <= type(uint128).max);
+            require(hi_r0 <= type(uint256).max, "hi_r0");
+            require(hi_r1 <= type(uint256).max, "hi_r1");
 
             (r_0, r_1) = (hi_r0 + lo_r0, hi_r1 + lo_r1);
         }
