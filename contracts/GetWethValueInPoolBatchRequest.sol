@@ -19,7 +19,6 @@ contract GetWethValueInPoolBatchRequest {
 
         for (uint256 i = 0; i < pools.length; ++i) {
             //Get the token0 and token1 from the pool
-            console.log(pools[i]);
 
             address token0 = IUniswapV2Pair(pools[i]).token0();
             address token1 = IUniswapV2Pair(pools[i]).token1();
@@ -82,7 +81,6 @@ contract GetWethValueInPoolBatchRequest {
             return 0;
         } else {
             for (uint256 i = 0; i < dexes.length; ++i) {
-                console.log(dexes[i], dexIsUniV3[i]);
                 uint256 wethValueInPool = _getWethValueOfTokenInPool(
                     token,
                     weth,
@@ -236,11 +234,11 @@ contract GetWethValueInPoolBatchRequest {
 
         //Check if the weth value meets the threshold
         if (tokenIsToken0) {
-            if (r_0 < wethLiquidityThreshold) {
+            if (r_1 < wethLiquidityThreshold) {
                 return 0;
             }
         } else {
-            if (r_1 < wethLiquidityThreshold) {
+            if (r_0 < wethLiquidityThreshold) {
                 return 0;
             }
         }
@@ -249,6 +247,7 @@ contract GetWethValueInPoolBatchRequest {
             tokenIsToken0 ? r_1 : r_0,
             tokenIsToken0 ? r_0 : r_1
         );
+
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
 
@@ -266,17 +265,20 @@ contract GetWethValueInPoolBatchRequest {
 
         (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
 
+        //Check if the weth value meets the threshold
         if (tokenIsToken0) {
-            if (r_0 < wethLiquidityThreshold) {
+            if (r_1 < wethLiquidityThreshold) {
                 return 0;
             }
         } else {
-            if (r_1 < wethLiquidityThreshold) {
+            if (r_0 < wethLiquidityThreshold) {
                 return 0;
             }
         }
 
         uint128 price = tokenIsToken0 ? divuu(r_1, r_0) : divuu(r_0, r_1);
+
+        console.log("uv3", price);
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
