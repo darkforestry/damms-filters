@@ -22,33 +22,38 @@ contract GetWethValueInPoolBatchRequest {
             console.log(pools[i]);
 
             address token0 = IUniswapV2Pair(pools[i]).token0();
-
             address token1 = IUniswapV2Pair(pools[i]).token1();
 
             //Get the reserves from the pool
             (uint256 r0, uint256 r1) = getReserves(pools[i], token0, token1);
 
-            //Get the value of the tokens in the pool in weth
-            uint256 token0WethValueInPool = getWethValueOfTokenInPool(
-                token0,
-                weth,
-                r0,
-                dexes,
-                dexIsUniV3,
-                wethInPoolThreshold
-            );
+            if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
+                //Get the value of the tokens in the pool in weth
+                uint256 token0WethValueInPool = getWethValueOfTokenInPool(
+                    token0,
+                    weth,
+                    r0,
+                    dexes,
+                    dexIsUniV3,
+                    wethInPoolThreshold
+                );
 
-            uint256 token1WethValueInPool = getWethValueOfTokenInPool(
-                token1,
-                weth,
-                r1,
-                dexes,
-                dexIsUniV3,
-                wethInPoolThreshold
-            );
+                uint256 token1WethValueInPool = getWethValueOfTokenInPool(
+                    token1,
+                    weth,
+                    r1,
+                    dexes,
+                    dexIsUniV3,
+                    wethInPoolThreshold
+                );
 
-            // add the aggregate weth value of both of the tokens in the pool to the wethValueInPools array
-            wethValueInPools[i] = token0WethValueInPool + token1WethValueInPool;
+                // add the aggregate weth value of both of the tokens in the pool to the wethValueInPools array
+                wethValueInPools[i] =
+                    token0WethValueInPool +
+                    token1WethValueInPool;
+            } else {
+                wethValueInPools[i] = 0;
+            }
         }
 
         // insure abi encoding, not needed here but increase reusability for different return types
@@ -63,7 +68,6 @@ contract GetWethValueInPoolBatchRequest {
         }
     }
 
-    ///TODO: write a doc comment describing what wethInPoolThreshold is
     function getWethValueOfTokenInPool(
         address token,
         address weth,
@@ -132,7 +136,6 @@ contract GetWethValueInPoolBatchRequest {
 
                     if (pairAddress != ADDRESS_ZERO) {
                         ///Check here if the weth in pool threshold is met
-
                         uint256 wethValue = getTokenToWethValueV3(
                             token,
                             amount,
@@ -190,13 +193,16 @@ contract GetWethValueInPoolBatchRequest {
             (r_x, r_y) = calculateV3VirtualReserves(lp);
         }
 
-        return
-            normalizeTo18Dec(
-                r_x,
-                r_y,
-                IERC20(token0).decimals(),
-                IERC20(token1).decimals()
-            );
+        //Check if the token has decimals, we can know that the codesize is non zero because we already checked this earlier. If the decimals can
+        // not be found, return 0, 0 since the pool can not be used.
+        (uint8 token0Decimals, bool t0s) = getTokenDecimalsUnsafe(token0);
+        (uint8 token1Decimals, bool t1s) = getTokenDecimalsUnsafe(token1);
+
+        if (t0s && t1s) {
+            return normalizeTo18Dec(r_x, r_y, token0Decimals, token1Decimals);
+        } else {
+            return (0, 0);
+        }
     }
 
     function normalizeTo18Dec(
@@ -286,6 +292,11 @@ contract GetWethValueInPoolBatchRequest {
     {
         (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
         uint128 liquidity = IUniswapV3PoolState(pool).liquidity();
+
+        if (liquidity == 0 || sqrtPriceX96 == 0) {
+            return (0, 0);
+        }
+
         unchecked {
             uint256 sqrtPriceInv = (2**192 / sqrtPriceX96);
 
@@ -376,6 +387,33 @@ contract GetWethValueInPoolBatchRequest {
         }
     }
 
+    /// @notice returns true as the second return value if the token decimals can be successfully retrieved
+    function getTokenDecimalsUnsafe(address token)
+        internal
+        returns (uint8, bool)
+    {
+        (bool tokenDecimalsSuccess, bytes memory tokenDecimalsData) = token
+            .call(abi.encodeWithSignature("decimals()"));
+
+        if (tokenDecimalsSuccess) {
+            uint256 tokenDecimals;
+
+            if (tokenDecimalsData.length == 32) {
+                (tokenDecimals) = abi.decode(tokenDecimalsData, (uint256));
+
+                if (tokenDecimals == 0 || tokenDecimals > 255) {
+                    return (0, false);
+                } else {
+                    return (uint8(tokenDecimals), true);
+                }
+            } else {
+                return (0, false);
+            }
+        } else {
+            return (0, false);
+        }
+    }
+
     /// @notice helper function to multiply unsigned 64.64 fixed point number by a unsigned integer
     /// @param x 64.64 unsigned fixed point number
     /// @param y uint256 unsigned integer
@@ -427,6 +465,14 @@ contract GetWethValueInPoolBatchRequest {
         ///@notice return the opposite of success, meaning if the call succeeded, the address is univ3, and we should
         ///@notice indicate that lpIsNotUniV3 is false
         return !success;
+    }
+
+    function codeSizeIsZero(address target) internal view returns (bool) {
+        if (target.code.length == 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
