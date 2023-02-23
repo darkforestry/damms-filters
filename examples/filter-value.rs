@@ -26,29 +26,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
         //     DexVariant::UniswapV2,
         //     4931780,
         // ),
-        // // Add Sushiswap
-        // Dex::new(
-        //     H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
-        //     DexVariant::UniswapV2,
-        //     11333218,
-        // ),
+        // Add Sushiswap
+        Dex::new(
+            H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
+            DexVariant::UniswapV2,
+            11333218,
+        ),
         // //Add apeswap
         // Dex::new(
         //     H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
         //     DexVariant::UniswapV2,
         //     15298801,
         // ),
-        //Add uniswap v3
-        Dex::new(
-            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-            DexVariant::UniswapV3,
-            22757547,
-        ),
+        // //Add uniswap v3
+        // Dex::new(
+        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+        //     DexVariant::UniswapV3,
+        //     22757547,
+        // ),
     ];
 
-    //Sync pools
-    let pools =
-        sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 7, None).await?;
+    // //Sync pools
+    // let pools =
+    //     sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 7, None).await?;
+
+    let pools = vec![Pool::new_from_address(
+        H160::from_str("0x503354319bA96B985Fb83E6732F5d81b99917D6e").unwrap(),
+        DexVariant::UniswapV2,
+        provider.clone(),
+    )
+    .await
+    .unwrap()];
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
@@ -66,6 +74,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,
     );
 
+    let weth_value_in_token_to_weth_pool_threshold =
+        U256::from_str("100000000000000000000").unwrap(); // 1000 matic
+
     println!("Filtering pools below usd threshold");
 
     let filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
@@ -74,13 +85,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         usd_weth_pool,
         100000.00, //Setting usd_threshold to 100000.00 filters out any pool that contains less than $100k USD
         weth_address,
-        // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than 2 eth
-        U256::from_str("500000000000000000000").unwrap(),
+        // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than $1000 USD worth
+        weth_value_in_token_to_weth_pool_threshold,
         provider.clone(),
     )
     .await?;
 
-    dbg!(filtered_pools);
+    dbg!(filtered_pools.clone());
+    dbg!(filtered_pools.len());
 
     Ok(())
 }

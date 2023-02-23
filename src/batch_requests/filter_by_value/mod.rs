@@ -47,8 +47,12 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
         Token::Uint(weth_value_in_token_to_weth_pool_threshold),
     ]);
 
+    dbg!("constructargs", constructor_args.clone());
+
     let deployer = GetWethValueInPoolBatchRequest::deploy(middleware, constructor_args).unwrap();
     let return_data: Bytes = deployer.call_raw().await?;
+
+    dbg!("retdat: {:?}", return_data.clone());
 
     let return_data_tokens = ethers::abi::decode(
         &[ParamType::Array(Box::new(ParamType::Uint(256)))],

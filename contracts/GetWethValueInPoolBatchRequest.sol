@@ -282,8 +282,6 @@ contract GetWethValueInPoolBatchRequest {
             tokenIsToken0 ? weth : token
         );
 
-        (r_0, r_1) = normalizeReserves(r_0, r_1, token, weth);
-
         //Check if the weth value meets the threshold
         if (tokenIsToken0) {
             if (r_1 < wethLiquidityThreshold) {
@@ -298,6 +296,8 @@ contract GetWethValueInPoolBatchRequest {
                 return 0;
             }
         }
+
+        (r_0, r_1) = normalizeReserves(r_0, r_1, token, weth);
 
         uint128 price = divuu(
             tokenIsToken0 ? r_1 : r_0,
