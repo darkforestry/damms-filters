@@ -30,7 +30,5 @@ contract GasTest is DSTest {
                 wethInPoolThreshold
             );
         console.logBytes(address(batchContract).code);
-
-        remove console log throughout contract to save gas
     }
 }
