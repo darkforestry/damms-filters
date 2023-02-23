@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
@@ -62,6 +63,7 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
+        console.log(wethValueInPools[0]);
         // insure abi encoding, not needed here but increase reusability for different return types
         // note: abi.encode add a first 32 bytes word with the address of the original data
         bytes memory abiEncodedData = abi.encode(wethValueInPools);
@@ -205,8 +207,13 @@ contract GetWethValueInPoolBatchRequest {
             );
 
             if (success0 && success1) {
-                r_x = lpBalanceOfToken0;
-                r_y = lpBalanceOfToken1;
+                if (token0 < token1) {
+                    r_x = lpBalanceOfToken0;
+                    r_y = lpBalanceOfToken1;
+                } else {
+                    r_y = lpBalanceOfToken0;
+                    r_x = lpBalanceOfToken1;
+                }
             }
         }
 
@@ -276,7 +283,11 @@ contract GetWethValueInPoolBatchRequest {
         address pool,
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
-        (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
+        console.log(pool, token, weth);
+
+        (uint256 r_0, uint256 r_1) = getReserves(pool, token, weth);
+
+        console.log(r_0, r_1);
 
         (uint256 r_x, uint256 r_y) = getNormalizedReserves(
             r_0,
@@ -284,6 +295,8 @@ contract GetWethValueInPoolBatchRequest {
             token < weth ? token : weth,
             token < weth ? weth : token
         );
+        console.log(r_x, r_y);
+
         //Check if the weth value meets the threshold
         if (token < weth) {
             if (r_y < wethLiquidityThreshold) {
@@ -294,6 +307,12 @@ contract GetWethValueInPoolBatchRequest {
                 return 0;
             }
         }
+
+        console.log(
+            "weththresh",
+            wethLiquidityThreshold,
+            token < weth ? r_y : r_x
+        );
 
         uint128 price = token < weth ? divuu(r_y, r_x) : divuu(r_x, r_y);
         //Add the price to the tokenToWeth price mapping
