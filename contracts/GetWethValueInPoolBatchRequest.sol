@@ -210,10 +210,10 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        return getTokenDecimalsAndNormalize(r_x, r_y, token0, token1);
+        return getNormalizedReserves(r_x, r_y, token0, token1);
     }
 
-    function getTokenDecimalsAndNormalize(
+    function getNormalizedReserves(
         uint256 x,
         uint256 y,
         address token0,
@@ -278,7 +278,7 @@ contract GetWethValueInPoolBatchRequest {
     ) internal returns (uint256) {
         (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
 
-        (uint256 r_x, uint256 r_y) = getTokenDecimalsAndNormalize(
+        (uint256 r_x, uint256 r_y) = getNormalizedReserves(
             r_0,
             r_1,
             token < weth ? token : weth,

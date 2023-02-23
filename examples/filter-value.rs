@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         100000.00, //Setting usd_threshold to 100000.00 filters out any pool that contains less than $100k USD
         weth_address,
         // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than 2 eth
-        U256_2_POW_18,
+        U256::from_str("2000000000000000000000").unwrap(),
         provider.clone(),
     )
     .await?;
