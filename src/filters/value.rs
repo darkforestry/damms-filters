@@ -9,7 +9,6 @@ use ethers::{
     types::{H160, U256},
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use num_bigfloat::BigFloat;
 
 use crate::batch_requests;
 
@@ -42,8 +41,6 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
 
     let mut i = 0;
     for weth_value in weth_values_in_pools {
-        println!("weth_value: {}", weth_value);
-
         if (weth_value / U256_10_POW_18).as_u64() as f64 * weth_usd_price
             >= usd_value_in_pool_threshold
         {
