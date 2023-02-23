@@ -21,7 +21,7 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
 ) -> Result<Vec<U256>, cfmms::errors::CFMMError<M>> {
     let mut weth_values_in_pools = vec![];
 
-    // dbg!(pools);
+    dbg!(pools);
 
     let pools = pools
         .iter()

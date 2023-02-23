@@ -26,24 +26,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
         //     DexVariant::UniswapV2,
         //     4931780,
         // ),
-        //Add Sushiswap
-        Dex::new(
-            H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
-            DexVariant::UniswapV2,
-            11333218,
-        ),
+        // // Add Sushiswap
+        // Dex::new(
+        //     H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     11333218,
+        // ),
         // //Add apeswap
         // Dex::new(
         //     H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
         //     DexVariant::UniswapV2,
         //     15298801,
         // ),
-        // //Add uniswap v3
-        // Dex::new(
-        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-        //     DexVariant::UniswapV3,
-        //     22757547,
-        // ),
+        //Add uniswap v3
+        Dex::new(
+            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+            DexVariant::UniswapV3,
+            22757547,
+        ),
     ];
 
     //Sync pools

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
@@ -136,7 +135,7 @@ contract GetWethValueInPoolBatchRequest {
                 for (uint256 j = 0; j < feeTiers.length; ++j) {
                     address pairAddress = IUniswapV3Factory(dexFactory).getPool(
                         token < weth ? token : weth,
-                        weth < token ? weth : token,
+                        token < weth ? weth : token,
                         feeTiers[j]
                     );
 
@@ -196,33 +195,32 @@ contract GetWethValueInPoolBatchRequest {
             r_x = r_x_112;
             r_y = r_y_112;
         } else {
-            (r_x, r_y) = calculateV3VirtualReserves(lp);
+            (r_x, r_y) = (
+                IERC20(token0).balanceOf(lp),
+                IERC20(token1).balanceOf(lp)
+            );
         }
 
-        //Check if the token has decimals, we can know that the codesize is non zero because we already checked this earlier. If the decimals can
-        // not be found, return 0, 0 since the pool can not be used.
+        return getTokenDecimalsAndNormalize(r_x, r_y, token0, token1);
+    }
+
+    function getTokenDecimalsAndNormalize(
+        uint256 x,
+        uint256 y,
+        address token0,
+        address token1
+    ) internal returns (uint256 r_x, uint256 r_y) {
         (uint8 token0Decimals, bool t0s) = getTokenDecimalsUnsafe(token0);
         (uint8 token1Decimals, bool t1s) = getTokenDecimalsUnsafe(token1);
 
         if (t0s && t1s) {
-            return normalizeTo18Dec(r_x, r_y, token0Decimals, token1Decimals);
-        } else {
-            return (0, 0);
+            r_x = token0Decimals <= 18
+                ? x * (10**(18 - token0Decimals))
+                : x / (10**(token0Decimals - 18));
+            r_y = token1Decimals <= 18
+                ? y * (10**(18 - token1Decimals))
+                : y / (10**(token1Decimals - 18));
         }
-    }
-
-    function normalizeTo18Dec(
-        uint256 x,
-        uint256 y,
-        uint8 decimals_x,
-        uint8 decimals_y
-    ) internal pure returns (uint256 r_x, uint256 r_y) {
-        r_x = decimals_x <= 18
-            ? x * (10**(18 - decimals_x))
-            : x / (10**(decimals_x - 18));
-        r_y = decimals_y <= 18
-            ? y * (10**(18 - decimals_y))
-            : y / (10**(decimals_y - 18));
     }
 
     function getTokenToWethValueV2(
@@ -269,28 +267,28 @@ contract GetWethValueInPoolBatchRequest {
         address pool,
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
-        bool tokenIsToken0 = token < weth;
-
         (uint256 r_0, uint256 r_1) = calculateV3VirtualReserves(pool);
 
+        (uint256 r_x, uint256 r_y) = getTokenDecimalsAndNormalize(
+            r_0,
+            r_1,
+            token < weth ? token : weth,
+            token < weth ? weth : token
+        );
         //Check if the weth value meets the threshold
-        if (tokenIsToken0) {
-            if (r_1 < wethLiquidityThreshold) {
+        if (token < weth) {
+            if (r_y < wethLiquidityThreshold) {
                 return 0;
             }
         } else {
-            if (r_0 < wethLiquidityThreshold) {
+            if (r_x < wethLiquidityThreshold) {
                 return 0;
             }
         }
 
-        uint128 price = tokenIsToken0 ? divuu(r_1, r_0) : divuu(r_0, r_1);
-
-        console.log("uv3", price);
-
+        uint128 price = token < weth ? divuu(r_y, r_x) : divuu(r_x, r_y);
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
-
         return mul64U(price, tokenAmount);
     }
 
@@ -515,6 +513,8 @@ interface IUniswapV3Factory {
 
 interface IERC20 {
     function decimals() external view returns (uint8);
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 interface IUniswapV2Factory {
