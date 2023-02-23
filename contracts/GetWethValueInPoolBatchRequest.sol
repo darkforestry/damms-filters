@@ -195,10 +195,19 @@ contract GetWethValueInPoolBatchRequest {
             r_x = r_x_112;
             r_y = r_y_112;
         } else {
-            (r_x, r_y) = (
-                IERC20(token0).balanceOf(lp),
-                IERC20(token1).balanceOf(lp)
+            (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
+                token0,
+                lp
             );
+            (uint256 lpBalanceOfToken1, bool success1) = getBalanceOfUnsafe(
+                token1,
+                lp
+            );
+
+            if (success0 && success1) {
+                r_x = lpBalanceOfToken0;
+                r_y = lpBalanceOfToken1;
+            }
         }
 
         return getTokenDecimalsAndNormalize(r_x, r_y, token0, token1);
@@ -333,7 +342,7 @@ contract GetWethValueInPoolBatchRequest {
     /// @return unsigned 64.64 fixed point number
     function divuu(uint256 x, uint256 y) internal pure returns (uint128) {
         unchecked {
-            require(y != 0);
+            if (y == 0) return 0;
 
             uint256 answer;
 
@@ -436,6 +445,30 @@ contract GetWethValueInPoolBatchRequest {
         }
     }
 
+    /// @notice returns true as the second return value if the token decimals can be successfully retrieved
+    function getBalanceOfUnsafe(address token, address targetAddress)
+        internal
+        returns (uint256, bool)
+    {
+        (bool balanceOfSuccess, bytes memory balanceOfData) = token.call(
+            abi.encodeWithSignature("balanceOf(address)", targetAddress)
+        );
+
+        if (balanceOfSuccess) {
+            uint256 balance;
+
+            if (balanceOfData.length == 32) {
+                (balance) = abi.decode(balanceOfData, (uint256));
+
+                return (balance, true);
+            } else {
+                return (0, false);
+            }
+        } else {
+            return (0, false);
+        }
+    }
+
     /// @notice helper function to multiply unsigned 64.64 fixed point number by a unsigned integer
     /// @param x 64.64 unsigned fixed point number
     /// @param y uint256 unsigned integer
@@ -450,13 +483,17 @@ contract GetWethValueInPoolBatchRequest {
                 (y & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)) >> 64;
             uint256 hi = uint256(x) * (y >> 128);
 
-            require(hi <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+            require(
+                hi <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
+                "overflow-0 in mul64U"
+            );
             hi <<= 64;
 
             require(
                 hi <=
                     0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff -
-                        lo
+                        lo,
+                "overflow-1 in mul64U"
             );
             return hi + lo;
         }

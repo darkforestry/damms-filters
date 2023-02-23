@@ -10,7 +10,7 @@ contract GasTest is DSTest {
 
     function testBatchContract() public {
         address[] memory pools = new address[](1);
-        pools[0] = 0xA374094527e1673A86dE625aa59517c5dE346d32;
+        pools[0] = 0x531C253fdcB926f70AAb1693F7882654EAc8DE88;
         address[] memory dexes = new address[](1);
         // dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
         // dexes[1] = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
