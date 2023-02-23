@@ -31,8 +31,6 @@ contract GasTest is DSTest {
             );
         console.logBytes(address(batchContract).code);
 
-        //FIXME:
-        // something wrong with the v2 calc, we need to have it updated should be 68000000000000000000,
-        // but it is returning 680000000068000000000000000000? prob something with normalization as well
+        remove console log throughout contract to save gas
     }
 }
