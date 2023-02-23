@@ -17,7 +17,6 @@ pub const U256_10_POW_18: U256 = U256([1000000000000000000, 0, 0, 0]);
 pub const U256_10_POW_6: U256 = U256([1000000, 0, 0, 0]);
 
 //Filter that removes pools with that contain less than a specified usd value
-#[allow(clippy::too_many_arguments)]
 pub async fn filter_pools_below_usd_threshold<M: Middleware>(
     pools: Vec<Pool>,
     dexes: &[Dex],
