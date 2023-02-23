@@ -10,7 +10,7 @@ contract GasTest is DSTest {
 
     function testBatchContract() public {
         address[] memory pools = new address[](1);
-        pools[0] = 0xB0e10B81f0e420eF7E3938ae224Cf2D29E3EE80f;
+        pools[0] = 0x439FD2D70D647a2AB35e2Bd335AB98dD079dF5fB;
         // pools[0] = 0xA374094527e1673A86dE625aa59517c5dE346d32;
         address[] memory dexes = new address[](1);
         // dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
@@ -21,7 +21,7 @@ contract GasTest is DSTest {
         // dexIsUniV3[1] = false;
         dexIsUniV3[0] = true;
         address weth = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-        uint256 wethInPoolThreshold = 10 ether;
+        uint256 wethInPoolThreshold = 1000 ether;
         GetWethValueInPoolBatchRequest batchContract = new GetWethValueInPoolBatchRequest(
                 pools,
                 dexes,
