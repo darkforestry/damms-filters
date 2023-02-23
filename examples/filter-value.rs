@@ -16,39 +16,39 @@ use cfmms::{
 async fn main() -> Result<(), Box<dyn Error>> {
     //Add rpc endpoint here:
     let rpc_endpoint =
-        std::env::var("POLYGON_MAINNET_ENDPOINT").expect("Could not get ETHEREUM_MAINNET_ENDPOINT");
+        std::env::var("POLYGON_MAINNET_ENDPOINT").expect("Could not get POLYGON_MAINNET_ENDPOINT");
     let provider = Arc::new(Provider::<Http>::try_from(rpc_endpoint).unwrap());
 
     let dexes = vec![
-        //Quickswap
-        Dex::new(
-            H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
-            DexVariant::UniswapV2,
-            4931780,
-        ),
+        // //Quickswap
+        // Dex::new(
+        //     H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     4931780,
+        // ),
         //Add Sushiswap
         Dex::new(
             H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
             DexVariant::UniswapV2,
             11333218,
         ),
-        //Add apeswap
-        Dex::new(
-            H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
-            DexVariant::UniswapV2,
-            15298801,
-        ),
-        //Add uniswap v3
-        Dex::new(
-            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-            DexVariant::UniswapV3,
-            22757547,
-        ),
+        // //Add apeswap
+        // Dex::new(
+        //     H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     15298801,
+        // ),
+        // //Add uniswap v3
+        // Dex::new(
+        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+        //     DexVariant::UniswapV3,
+        //     22757547,
+        // ),
     ];
 
     //Sync pools
     let pools =
-        sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 5, None).await?;
+        sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 7, None).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
@@ -58,9 +58,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let filtered_pools =
         cfmms_pool_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
 
-    let weth_address = H160::from_str("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").unwrap();
+    let weth_address = H160::from_str("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270").unwrap();
     let usd_weth_pair_address =
-        H160::from_str("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc").unwrap();
+        H160::from_str("0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827").unwrap();
 
     let usd_weth_pool = Pool::UniswapV2(
         UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,

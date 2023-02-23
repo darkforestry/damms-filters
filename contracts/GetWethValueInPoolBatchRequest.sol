@@ -20,36 +20,44 @@ contract GetWethValueInPoolBatchRequest {
         for (uint256 i = 0; i < pools.length; ++i) {
             //Get the token0 and token1 from the pool
 
-            address token0 = IUniswapV2Pair(pools[i]).token0();
-            address token1 = IUniswapV2Pair(pools[i]).token1();
+            if (!codeSizeIsZero(pools[i])) {
+                address token0 = IUniswapV2Pair(pools[i]).token0();
+                address token1 = IUniswapV2Pair(pools[i]).token1();
 
-            //Get the reserves from the pool
-            (uint256 r0, uint256 r1) = getReserves(pools[i], token0, token1);
+                if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
+                    //Get the reserves from the pool
+                    (uint256 r0, uint256 r1) = getReserves(
+                        pools[i],
+                        token0,
+                        token1
+                    );
 
-            if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
-                //Get the value of the tokens in the pool in weth
-                uint256 token0WethValueInPool = getWethValueOfTokenInPool(
-                    token0,
-                    weth,
-                    r0,
-                    dexes,
-                    dexIsUniV3,
-                    wethInPoolThreshold
-                );
+                    //Get the value of the tokens in the pool in weth
+                    uint256 token0WethValueInPool = getWethValueOfTokenInPool(
+                        token0,
+                        weth,
+                        r0,
+                        dexes,
+                        dexIsUniV3,
+                        wethInPoolThreshold
+                    );
 
-                uint256 token1WethValueInPool = getWethValueOfTokenInPool(
-                    token1,
-                    weth,
-                    r1,
-                    dexes,
-                    dexIsUniV3,
-                    wethInPoolThreshold
-                );
+                    uint256 token1WethValueInPool = getWethValueOfTokenInPool(
+                        token1,
+                        weth,
+                        r1,
+                        dexes,
+                        dexIsUniV3,
+                        wethInPoolThreshold
+                    );
 
-                // add the aggregate weth value of both of the tokens in the pool to the wethValueInPools array
-                wethValueInPools[i] =
-                    token0WethValueInPool +
-                    token1WethValueInPool;
+                    // add the aggregate weth value of both of the tokens in the pool to the wethValueInPools array
+                    wethValueInPools[i] =
+                        token0WethValueInPool +
+                        token1WethValueInPool;
+                } else {
+                    wethValueInPools[i] = 0;
+                }
             } else {
                 wethValueInPools[i] = 0;
             }
@@ -359,10 +367,17 @@ contract GetWethValueInPoolBatchRequest {
                 if (xc >= 0x2) msb += 1; // No need to shift xc anymore
 
                 answer = (x << (255 - msb)) / (((y - 1) >> (msb - 191)) + 1);
-                require(
-                    answer <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
-                    "overflow in divuu"
-                );
+
+                // require(
+                //     answer <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
+                //     "overflow in divuu"
+                // );
+
+                // We ignore pools that have a price that is too high because it is likely that the reserves are too low to be accurate
+                // There is almost certainly not a pool that has a price of token/weth > 2^128
+                if (answer > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) {
+                    return 0;
+                }
 
                 uint256 hi = answer * (y >> 128);
                 uint256 lo = answer * (y & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
@@ -381,10 +396,17 @@ contract GetWethValueInPoolBatchRequest {
                 answer += xl / y;
             }
 
-            require(
-                answer <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
-                "overflow in divuu last"
-            );
+            // require(
+            //     answer <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
+            //     "overflow in divuu last"
+            // );
+
+            // We ignore pools that have a price that is too high because it is likely that the reserves are too low to be accurate
+            // There is almost certainly not a pool that has a price of token/weth > 2^128
+            if (answer > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) {
+                return 0;
+            }
+
             return uint128(answer);
         }
     }

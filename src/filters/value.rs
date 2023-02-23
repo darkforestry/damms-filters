@@ -110,6 +110,8 @@ pub async fn get_weth_values_in_pools<M: Middleware>(
     let mut aggregate_weth_values_in_pools = vec![];
 
     let step = 500; //max batch size for this call until codesize is too large
+                    // let step = 1; //max batch size for this call until codesize is too large
+
     let mut idx_from = 0;
     let mut idx_to = if step > pools.len() {
         pools.len()
