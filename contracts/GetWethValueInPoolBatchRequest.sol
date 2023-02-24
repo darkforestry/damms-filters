@@ -71,8 +71,7 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        console.log("weth value in pool", wethValueInPools[0]);
-
+        console.log("wvip", wethValueInPools[0]);
         // insure abi encoding, not needed here but increase reusability for different return types
         // note: abi.encode add a first 32 bytes word with the address of the original data
         bytes memory abiEncodedData = abi.encode(wethValueInPools);
@@ -165,6 +164,7 @@ contract GetWethValueInPoolBatchRequest {
                     );
 
                     if (pairAddress != ADDRESS_ZERO) {
+                        console.log("here");
                         ///Check here if the weth in pool threshold is met
                         uint256 wethValue = getTokenToWethValueV3(
                             token,
@@ -206,11 +206,15 @@ contract GetWethValueInPoolBatchRequest {
         return 0;
     }
 
-    function getNormalizedReserves(
+    function getReserves(
         address lp,
         address token0,
         address token1
     ) internal returns (uint256, uint256) {
+        (token0, token1) = (token0 < token1)
+            ? (token0, token1)
+            : (token1, token0);
+
         uint256 r_x;
         uint256 r_y;
 
@@ -239,6 +243,53 @@ contract GetWethValueInPoolBatchRequest {
                 }
             }
         }
+
+        return (r_x, r_y);
+    }
+
+    function getNormalizedReserves(
+        address lp,
+        address token0,
+        address token1
+    ) internal returns (uint256, uint256) {
+        console.log("pair address to get reserves", lp);
+
+        (token0, token1) = (token0 < token1)
+            ? (token0, token1)
+            : (token1, token0);
+
+        console.log("t0", token0, "t1", token1);
+
+        uint256 r_x;
+        uint256 r_y;
+
+        if (lpIsNotUniV3(lp)) {
+            (uint112 r_x_112, uint112 r_y_112, ) = IUniswapV2Pair(lp)
+                .getReserves();
+            r_x = r_x_112;
+            r_y = r_y_112;
+        } else {
+            (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
+                token0,
+                lp
+            );
+            (uint256 lpBalanceOfToken1, bool success1) = getBalanceOfUnsafe(
+                token1,
+                lp
+            );
+
+            if (success0 && success1) {
+                if (token0 < token1) {
+                    r_x = lpBalanceOfToken0;
+                    r_y = lpBalanceOfToken1;
+                } else {
+                    r_y = lpBalanceOfToken0;
+                    r_x = lpBalanceOfToken1;
+                }
+            }
+        }
+
+        console.log("r0", r_x, "r1", r_y);
 
         return normalizeReserves(r_x, r_y, token0, token1);
     }
@@ -271,11 +322,7 @@ contract GetWethValueInPoolBatchRequest {
     ) internal returns (uint256) {
         bool tokenIsToken0 = token < weth;
 
-        (uint256 r_0, uint256 r_1) = getNormalizedReserves(
-            pool,
-            tokenIsToken0 ? token : weth,
-            tokenIsToken0 ? weth : token
-        );
+        (uint256 r_0, uint256 r_1) = getNormalizedReserves(pool, token, weth);
 
         //Check if the weth value meets the threshold
         if (tokenIsToken0) {
@@ -306,10 +353,12 @@ contract GetWethValueInPoolBatchRequest {
         address pool,
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
+        bool tokenIsToken0 = token < weth;
+
         (uint256 r_0, uint256 r_1) = getNormalizedReserves(pool, token, weth);
 
         //Check if the weth value meets the threshold
-        if (token < weth) {
+        if (tokenIsToken0) {
             if (r_1 < wethLiquidityThreshold) {
                 return 0;
             }
@@ -319,7 +368,13 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        uint128 price = token < weth ? divuu(r_1, r_0) : divuu(r_0, r_1);
+        uint128 price = divuu(
+            tokenIsToken0 ? r_1 : r_0,
+            tokenIsToken0 ? r_0 : r_1
+        );
+
+        console.log("reserves", r_0, r_1);
+        console.log("price", price);
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;

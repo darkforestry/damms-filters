@@ -20,24 +20,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let provider = Arc::new(Provider::<Http>::try_from(rpc_endpoint).unwrap());
 
     let dexes = vec![
-        //Quickswap
-        Dex::new(
-            H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
-            DexVariant::UniswapV2,
-            4931780,
-        ),
-        // Add Sushiswap
-        Dex::new(
-            H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
-            DexVariant::UniswapV2,
-            11333218,
-        ),
-        //Add apeswap
-        Dex::new(
-            H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
-            DexVariant::UniswapV2,
-            15298801,
-        ),
+        // //Quickswap
+        // Dex::new(
+        //     H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     4931780,
+        // ),
+        // // Add Sushiswap
+        // Dex::new(
+        //     H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     11333218,
+        // ),
+        // //Add apeswap
+        // Dex::new(
+        //     H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
+        //     DexVariant::UniswapV2,
+        //     15298801,
+        // ),
         //Add uniswap v3
         Dex::new(
             H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         filtered_pools,
         &dexes,
         usd_weth_pool,
-        30000.00, //Setting usd_threshold to 10000.00 filters out any pool that contains less than $30k USD value
+        1000000.00, //Setting usd_threshold to 10000.00 filters out any pool that contains less than $1m USD value
         weth_address,
         // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than $1000 USD worth
         weth_value_in_token_to_weth_pool_threshold,
