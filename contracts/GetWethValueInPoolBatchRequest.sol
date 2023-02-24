@@ -31,9 +31,10 @@ contract GetWethValueInPoolBatchRequest {
                 address token1 = IUniswapV2Pair(pools[i]).token1();
 
                 if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
-                    //TODO: this is coming out normalized!!!!! cant do this its making .00000003 usdc to 30000000 usdc
                     //Get the reserves from the pool
-                    (uint256 r0, uint256 r1) = getReserves(
+
+                    //Note that this normalizes the reserves to 18 decimals
+                    (uint256 r0, uint256 r1) = getNormalizedReserves(
                         pools[i],
                         token0,
                         token1
@@ -149,7 +150,7 @@ contract GetWethValueInPoolBatchRequest {
 
         if (tokenToWethPrice > 1) {
             //Calculate the value of weth in the pool by using the amount passed in and the price that we derived
-            return mul64U(tokenToWethPrice, amount);
+            return mul64u(tokenToWethPrice, amount);
         } else {
             // ^^ if we dont already have the price cached, that means that the price is not initialized and
             // we need to get the price from a pool from one of the dexes
@@ -205,7 +206,7 @@ contract GetWethValueInPoolBatchRequest {
         return 0;
     }
 
-    function getReserves(
+    function getNormalizedReserves(
         address lp,
         address token0,
         address token1
@@ -239,7 +240,7 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        return (r_x, r_y);
+        return normalizeReserves(r_x, r_y, token0, token1);
     }
 
     function normalizeReserves(
@@ -270,7 +271,7 @@ contract GetWethValueInPoolBatchRequest {
     ) internal returns (uint256) {
         bool tokenIsToken0 = token < weth;
 
-        (uint256 r_0, uint256 r_1) = getReserves(
+        (uint256 r_0, uint256 r_1) = getNormalizedReserves(
             pool,
             tokenIsToken0 ? token : weth,
             tokenIsToken0 ? weth : token
@@ -287,8 +288,6 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        (r_0, r_1) = normalizeReserves(r_0, r_1, token, weth);
-
         uint128 price = divuu(
             tokenIsToken0 ? r_1 : r_0,
             tokenIsToken0 ? r_0 : r_1
@@ -297,7 +296,7 @@ contract GetWethValueInPoolBatchRequest {
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
 
-        return mul64U(price, tokenAmount);
+        return mul64u(price, tokenAmount);
     }
 
     function getTokenToWethValueV3(
@@ -307,7 +306,7 @@ contract GetWethValueInPoolBatchRequest {
         address pool,
         uint256 wethLiquidityThreshold
     ) internal returns (uint256) {
-        (uint256 r_0, uint256 r_1) = getReserves(pool, token, weth);
+        (uint256 r_0, uint256 r_1) = getNormalizedReserves(pool, token, weth);
 
         //Check if the weth value meets the threshold
         if (token < weth) {
@@ -320,19 +319,12 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        (uint256 r_x, uint256 r_y) = normalizeReserves(
-            r_0,
-            r_1,
-            token < weth ? token : weth,
-            token < weth ? weth : token
-        );
-
-        uint128 price = token < weth ? divuu(r_y, r_x) : divuu(r_x, r_y);
+        uint128 price = token < weth ? divuu(r_1, r_0) : divuu(r_0, r_1);
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
 
-        return mul64U(price, tokenAmount);
+        return mul64u(price, tokenAmount);
     }
 
     ///Does not normalize to 18 decimals
@@ -507,7 +499,7 @@ contract GetWethValueInPoolBatchRequest {
     /// @param x 64.64 unsigned fixed point number
     /// @param y uint256 unsigned integer
     /// @return unsigned
-    function mul64U(uint128 x, uint256 y) internal pure returns (uint256) {
+    function mul64u(uint128 x, uint256 y) internal pure returns (uint256) {
         unchecked {
             if (y == 0 || x == 0) {
                 return 0;
@@ -519,7 +511,7 @@ contract GetWethValueInPoolBatchRequest {
 
             require(
                 hi <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
-                "overflow-0 in mul64U"
+                "overflow-0 in mul64u"
             );
             hi <<= 64;
 
@@ -527,7 +519,7 @@ contract GetWethValueInPoolBatchRequest {
                 hi <=
                     0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff -
                         lo,
-                "overflow-1 in mul64U"
+                "overflow-1 in mul64u"
             );
             return hi + lo;
         }

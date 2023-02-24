@@ -10,7 +10,7 @@ contract GasTest is DSTest {
 
     function testBatchContract() public {
         address[] memory pools = new address[](1);
-        pools[0] = 0x503354319bA96B985Fb83E6732F5d81b99917D6e;
+        pools[0] = 0xAE20515E3de8dBb002cAB308fA3f9B6b118b6229;
         // pools[0] = 0xA374094527e1673A86dE625aa59517c5dE346d32;
         address[] memory dexes = new address[](1);
         // dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
@@ -29,6 +29,7 @@ contract GasTest is DSTest {
                 weth,
                 wethInPoolThreshold
             );
+
         console.logBytes(address(batchContract).code);
     }
 }
