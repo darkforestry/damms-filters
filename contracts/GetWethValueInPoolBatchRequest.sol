@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
@@ -69,6 +70,8 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
+        console.log("weth value in pool", wethValueInPools[0]);
+
         // insure abi encoding, not needed here but increase reusability for different return types
         // note: abi.encode add a first 32 bytes word with the address of the original data
         bytes memory abiEncodedData = abi.encode(wethValueInPools);
@@ -118,6 +121,9 @@ contract GetWethValueInPoolBatchRequest {
                     return wethValueInPool;
                 }
             }
+
+            //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
+            tokenToWethPrices[token] = 1;
 
             //If no dexes have a valid price for the token, return 0
             return 0;
@@ -273,14 +279,10 @@ contract GetWethValueInPoolBatchRequest {
         //Check if the weth value meets the threshold
         if (tokenIsToken0) {
             if (r_1 < wethLiquidityThreshold) {
-                //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
-                tokenToWethPrices[token] = 1;
                 return 0;
             }
         } else {
             if (r_0 < wethLiquidityThreshold) {
-                //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
-                tokenToWethPrices[token] = 1;
                 return 0;
             }
         }
@@ -307,6 +309,17 @@ contract GetWethValueInPoolBatchRequest {
     ) internal returns (uint256) {
         (uint256 r_0, uint256 r_1) = getReserves(pool, token, weth);
 
+        //Check if the weth value meets the threshold
+        if (token < weth) {
+            if (r_1 < wethLiquidityThreshold) {
+                return 0;
+            }
+        } else {
+            if (r_0 < wethLiquidityThreshold) {
+                return 0;
+            }
+        }
+
         (uint256 r_x, uint256 r_y) = normalizeReserves(
             r_0,
             r_1,
@@ -314,25 +327,11 @@ contract GetWethValueInPoolBatchRequest {
             token < weth ? weth : token
         );
 
-        //Check if the weth value meets the threshold
-        if (token < weth) {
-            if (r_y < wethLiquidityThreshold) {
-                //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
-                tokenToWethPrices[token] = 1;
-                return 0;
-            }
-        } else {
-            if (r_x < wethLiquidityThreshold) {
-                //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
-                tokenToWethPrices[token] = 1;
-                return 0;
-            }
-        }
-
         uint128 price = token < weth ? divuu(r_y, r_x) : divuu(r_x, r_y);
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
+
         return mul64U(price, tokenAmount);
     }
 
