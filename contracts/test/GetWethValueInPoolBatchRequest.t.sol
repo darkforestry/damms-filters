@@ -22,6 +22,7 @@ contract GasTest is DSTest {
         dexIsUniV3[0] = true;
         address weth = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
         uint256 wethInPoolThreshold = 100000000000000000000;
+
         GetWethValueInPoolBatchRequest batchContract = new GetWethValueInPoolBatchRequest(
                 pools,
                 dexes,
