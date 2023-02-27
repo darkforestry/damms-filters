@@ -48,6 +48,7 @@ contract GetWethValueInPoolBatchRequest {
                         dexIsUniV3,
                         wethInPoolThreshold
                     );
+                    console.log("t0wvip", token0WethValueInPool);
 
                     uint256 token1WethValueInPool = getWethValueOfToken(
                         token1,
@@ -77,6 +78,8 @@ contract GetWethValueInPoolBatchRequest {
                 wethValueInPools[i] = 0;
             }
         }
+
+        console.log("wvip", wethValueInPools[0]);
 
         // insure abi encoding, not needed here but increase reusability for different return types
         // note: abi.encode add a first 32 bytes word with the address of the original data
