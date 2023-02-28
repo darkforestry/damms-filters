@@ -26,24 +26,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
         //     DexVariant::UniswapV2,
         //     4931780,
         // ),
-        // // Add Sushiswap
-        // Dex::new(
-        //     H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
-        //     DexVariant::UniswapV2,
-        //     11333218,
-        // ),
+        // Add Sushiswap
+        Dex::new(
+            H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
+            DexVariant::UniswapV2,
+            11333218,
+        ),
         // //Add apeswap
         // Dex::new(
         //     H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
         //     DexVariant::UniswapV2,
         //     15298801,
         // ),
-        //Add uniswap v3
-        Dex::new(
-            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-            DexVariant::UniswapV3,
-            22757547,
-        ),
+        // //Add uniswap v3
+        // Dex::new(
+        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+        //     DexVariant::UniswapV3,
+        //     22757547,
+        // ),
     ];
 
     //Sync pools
@@ -60,14 +60,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let weth_address = H160::from_str("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270").unwrap();
     let usd_weth_pair_address =
-        H160::from_str("0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827").unwrap();
+        H160::from_str("0xcd353F79d9FADe311fC3119B841e1f456b54e858").unwrap();
 
     let usd_weth_pool = Pool::UniswapV2(
         UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,
     );
 
     let weth_value_in_token_to_weth_pool_threshold =
-        U256::from_str("100000000000000000000").unwrap(); // 1000 matic
+        U256::from_dec_str("50000000000000000000").unwrap(); // 5000 matic
 
     println!("Filtering pools below usd threshold");
 

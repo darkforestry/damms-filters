@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+
 import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
@@ -48,7 +49,7 @@ contract GetWethValueInPoolBatchRequest {
                         dexIsUniV3,
                         wethInPoolThreshold
                     );
-                    console.log("t0wvip", token0WethValueInPool);
+                    // console.log("t0wvip", token0WethValueInPool);
 
                     uint256 token1WethValueInPool = getWethValueOfToken(
                         token1,
@@ -59,7 +60,7 @@ contract GetWethValueInPoolBatchRequest {
                         wethInPoolThreshold
                     );
 
-                    console.log("t1wvip", token1WethValueInPool);
+                    // console.log("t1wvip", token1WethValueInPool);
 
                     if (
                         token0WethValueInPool != 0 && token1WethValueInPool != 0
@@ -140,11 +141,11 @@ contract GetWethValueInPoolBatchRequest {
                     );
 
                     if (price != 0) {
-                        console.log("amount token");
-                        console.log(amount);
+                        // console.log("amount token");
+                        // console.log(amount);
 
-                        console.log("weth value");
-                        console.log(mul64u(price, amount));
+                        // console.log("weth value");
+                        // console.log(mul64u(price, amount));
 
                         return mul64u(price, amount);
                     }
@@ -258,8 +259,8 @@ contract GetWethValueInPoolBatchRequest {
 
         (uint256 r_0, uint256 r_1) = getNormalizedReserves(pool, token, weth);
 
-        console.log("normreserves");
-        console.log(r_0, r_1);
+        // console.log("normreserves");
+        // console.log(r_0, r_1);
 
         //Check if the weth value meets the threshold
         //Note: Normalization normalizes the decimals to 18 decimals. If there is ever a weth value that does not have 18 decimals for the chain
@@ -279,8 +280,8 @@ contract GetWethValueInPoolBatchRequest {
             tokenIsToken0 ? r_0 : r_1
         );
 
-        console.log("price");
-        console.log(price);
+        // console.log("price");
+        // console.log(price);
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
@@ -334,7 +335,7 @@ contract GetWethValueInPoolBatchRequest {
         address token0,
         address token1
     ) internal returns (uint256, uint256) {
-        console.log("pair address to get reserves", lp);
+        // console.log("pair address to get reserves", lp);
 
         (uint256 r_x, uint256 r_y) = getReserves(lp, token0, token1);
 
@@ -441,7 +442,7 @@ contract GetWethValueInPoolBatchRequest {
             // We ignore pools that have a price that is too high because it is likely that the reserves are too low to be accurate
             // There is almost certainly not a pool that has a price of token/weth > 2^128
             if (answer > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) {
-                console.log("hitting here");
+                // console.log("hitting here");
                 return 0;
             }
 

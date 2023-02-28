@@ -15,8 +15,8 @@ contract GasTest is DSTest {
         pools[0] = 0xcd353F79d9FADe311fC3119B841e1f456b54e858;
 
         address[] memory dexes = new address[](1);
-        dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
-        // dexes[1] = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+        // dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
+        dexes[0] = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
         // dexes[0] = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
         bool[] memory dexIsUniV3 = new bool[](1);
         dexIsUniV3[0] = false;
@@ -33,6 +33,6 @@ contract GasTest is DSTest {
                 wethInPoolThreshold
             );
 
-        // console.logBytes(address(batchContract).code);
+        console.logBytes(address(batchContract).code);
     }
 }
