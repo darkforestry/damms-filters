@@ -41,7 +41,6 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
 
     let mut i = 0;
     for weth_value in weth_values_in_pools {
-        dbg!("weth val", weth_value, pools[i]);
         if (weth_value / U256_10_POW_18).as_u64() as f64 * weth_usd_price
             >= usd_value_in_pool_threshold
         {

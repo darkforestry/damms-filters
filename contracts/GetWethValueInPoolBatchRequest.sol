@@ -306,8 +306,6 @@ contract GetWethValueInPoolBatchRequest {
             r_x = r_x_112;
             r_y = r_y_112;
         } else {
-            calculateV3VirtualReserves(pool);
-
             (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
                 token0,
                 lp
