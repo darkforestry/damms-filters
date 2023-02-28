@@ -21,8 +21,6 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
 ) -> Result<Vec<U256>, cfmms::errors::CFMMError<M>> {
     let mut weth_values_in_pools = vec![];
 
-    dbg!(pools.clone());
-
     let pools = pools
         .iter()
         .map(|p| Token::Address(p.address()))
@@ -41,8 +39,6 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
         .map(|d| Token::Address(d.factory_address()))
         .collect::<Vec<Token>>();
 
-    dbg!(dexes.clone());
-
     let constructor_args = Token::Tuple(vec![
         Token::Array(pools),
         Token::Array(dexes),
@@ -50,8 +46,6 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
         Token::Address(weth),
         Token::Uint(weth_value_in_token_to_weth_pool_threshold),
     ]);
-
-    dbg!(constructor_args.clone());
 
     let deployer = GetWethValueInPoolBatchRequest::deploy(middleware, constructor_args).unwrap();
     let return_data: Bytes = deployer.call_raw().await?;
