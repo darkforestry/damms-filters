@@ -211,6 +211,7 @@ contract GetWethValueInPoolBatchRequest {
                 if (pairAddress != ADDRESS_ZERO) {
                     ///Check here if the weth in pool threshold is met
                     uint128 price = getTokenToWethPriceFromPool(
+                        isUniV3,
                         token,
                         weth,
                         pairAddress,
@@ -232,6 +233,7 @@ contract GetWethValueInPoolBatchRequest {
 
             if (pairAddress != ADDRESS_ZERO) {
                 uint128 price = getTokenToWethPriceFromPool(
+                    isUniV3,
                     token,
                     weth,
                     pairAddress,
@@ -250,35 +252,44 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     function getTokenToWethPriceFromPool(
+        bool isUniV3,
         address token,
         address weth,
         address pool,
         uint256 wethLiquidityThreshold
-    ) internal returns (uint128) {
+    ) internal returns (uint128 price) {
         bool tokenIsToken0 = token < weth;
+        if (!isUniV3) {
+            (uint256 r_0, uint256 r_1) = getNormalizedReserves(
+                pool,
+                token,
+                weth
+            );
 
-        (uint256 r_0, uint256 r_1) = getNormalizedReserves(pool, token, weth);
+            // console.log("normreserves");
+            // console.log(r_0, r_1);
 
-        // console.log("normreserves");
-        // console.log(r_0, r_1);
-
-        //Check if the weth value meets the threshold
-        //Note: Normalization normalizes the decimals to 18 decimals. If there is ever a weth value that does not have 18 decimals for the chain
-        //or we change our normalization logic, we need to account for this
-        if (tokenIsToken0) {
-            if (r_1 < wethLiquidityThreshold) {
-                return 0;
+            //Check if the weth value meets the threshold
+            //Note: Normalization normalizes the decimals to 18 decimals. If there is ever a weth value that does not have 18 decimals for the chain
+            //or we change our normalization logic, we need to account for this
+            if (tokenIsToken0) {
+                if (r_1 < wethLiquidityThreshold) {
+                    return 0;
+                }
+            } else {
+                if (r_0 < wethLiquidityThreshold) {
+                    return 0;
+                }
             }
-        } else {
-            if (r_0 < wethLiquidityThreshold) {
-                return 0;
-            }
+
+            price = divuu(
+                tokenIsToken0 ? r_1 : r_0,
+                tokenIsToken0 ? r_0 : r_1
+            );
+        }else {
+            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
+            price = uint128(fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth)>>64);
         }
-
-        uint128 price = divuu(
-            tokenIsToken0 ? r_1 : r_0,
-            tokenIsToken0 ? r_0 : r_1
-        );
 
         // console.log("price");
         // console.log(price);
@@ -286,7 +297,7 @@ contract GetWethValueInPoolBatchRequest {
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
 
-        return price;
+        
     }
 
     function getReserves(
@@ -364,6 +375,36 @@ contract GetWethValueInPoolBatchRequest {
             r_y = token1Decimals <= 18
                 ? y * (10**(18 - token1Decimals))
                 : y / (10**(token1Decimals - 18));
+        }
+    }
+
+    function fromSqrtX96(
+        uint160 sqrtPriceX96,
+        bool token0IsReserve0,
+        address token0,
+        address token1
+    ) internal view returns (uint256 priceX128) {
+        unchecked {
+            ///@notice Cache the difference between the input and output token decimals. p=y/x ==> p*10**(x_decimals-y_decimals)>>Q192 will be the proper price in base 10.
+            int8 decimalShift = int8(IERC20(token0).decimals()) -
+                int8(IERC20(token1).decimals());
+            ///@notice Square the sqrtPrice ratio and normalize the value based on decimalShift.
+            uint256 priceSquaredX96 = decimalShift < 0
+                ? uint256(sqrtPriceX96)**2 / uint256(10)**(uint8(-decimalShift))
+                : uint256(sqrtPriceX96)**2 * 10**uint8(decimalShift);
+
+            ///@notice The first value is a Q96 representation of p_token0, the second is 128X fixed point representation of p_token1.
+            uint256 priceSquaredShiftQ96 = token0IsReserve0
+                ? priceSquaredX96 / Q96
+                : (Q96 * 0xffffffffffffffffffffffffffffffff) /
+                    (priceSquaredX96 / Q96);
+
+            ///@notice Convert the first value to 128X fixed point by shifting it left 128 bits and normalizing the value by Q96.
+            priceX128 = token0IsReserve0
+                ? (uint256(priceSquaredShiftQ96) *
+                    0xffffffffffffffffffffffffffffffff) / Q96
+                : priceSquaredShiftQ96;
+            require(priceX128 <= type(uint256).max, "Overflow");
         }
     }
 
