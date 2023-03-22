@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./test.sol";
-import "./Console.sol";
 import "../GetWethValueInPoolBatchRequest.sol";
 
 contract GasTest is DSTest {
