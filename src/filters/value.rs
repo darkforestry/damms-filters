@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use cfmms::{dex::Dex, errors::CFMMError, pool::Pool};
+use dcfmms::{dex::Dex, errors::CFMMError, pool::Pool};
 use ethers::{
     providers::Middleware,
     types::{H160, U256},

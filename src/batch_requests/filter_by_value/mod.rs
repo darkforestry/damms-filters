@@ -1,4 +1,4 @@
-use cfmms::{dex::Dex, pool::Pool};
+use dcfmms::{dex::Dex, pool::Pool};
 use ethers::{
     abi::{ParamType, Token},
     prelude::abigen,
