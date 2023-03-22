@@ -1,9 +1,7 @@
-use std::collections::{HashSet};
+use std::collections::HashSet;
 
-use dcfmms::pool::Pool;
+use damms::pool::Pool;
 use ethers::types::H160;
-
-
 
 //Filters out pools where the blacklisted address is the token_a address or token_b address
 pub fn filter_blacklisted_tokens(pools: Vec<Pool>, blacklisted_addresses: Vec<H160>) -> Vec<Pool> {

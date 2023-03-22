@@ -1,4 +1,4 @@
-use dcfmms::{dex::Dex, pool::Pool};
+use damms::{dex::Dex, pool::Pool};
 use ethers::{
     abi::{ParamType, Token},
     prelude::abigen,
@@ -18,7 +18,7 @@ pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
     weth: H160,
     weth_value_in_token_to_weth_pool_threshold: U256,
     middleware: Arc<M>,
-) -> Result<Vec<U256>, dcfmms::errors::CFMMError<M>> {
+) -> Result<Vec<U256>, damms::errors::CFMMError<M>> {
     let mut weth_values_in_pools = vec![];
 
     let pools = pools

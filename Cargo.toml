@@ -1,5 +1,5 @@
 [package]
-name = "dcfmms-pool-filters"
+name = "damms-filters"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,4 +22,4 @@ regex = "1.7.1"
 
 
 # Dark Forestry
-dcfmms = { git = "ssh://git@github.com/darkforestry/dcfmms-rs.git", branch = "main" }
+damms = { git = "ssh://git@github.com/darkforestry/damms-rs.git", tag = "0.1.0" }

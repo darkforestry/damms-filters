@@ -1,4 +1,4 @@
-# damm-filters
+# damms-filters
 
 A collection of filters to reduce invalid or poor quality AMMs on EVM chains.
 

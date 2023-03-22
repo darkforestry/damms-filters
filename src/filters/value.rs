@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use dcfmms::{dex::Dex, errors::CFMMError, pool::Pool};
+use damms::{dex::Dex, errors::CFMMError, pool::Pool};
 use ethers::{
     providers::Middleware,
     types::{H160, U256},
