@@ -25,25 +25,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
             H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
             DexVariant::UniswapV2,
             4931780,
+            Some(300),
         ),
         // Add Sushiswap
         Dex::new(
             H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
             DexVariant::UniswapV2,
             11333218,
+            Some(300),
         ),
         //Add apeswap
         Dex::new(
             H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
             DexVariant::UniswapV2,
             15298801,
+            Some(300),
         ),
-        // //Add uniswap v3
-        // Dex::new(
-        //     H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-        //     DexVariant::UniswapV3,
-        //     22757547,
-        // ),
+        //Add uniswap v3
+        Dex::new(
+            H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
+            DexVariant::UniswapV3,
+            22757547,
+            None,
+        ),
     ];
 
     //Sync pools
@@ -56,7 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     //Filter out blacklisted tokens
     let filtered_pools =
-        cfmms_pool_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
+        dcfmms_pool_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
 
     let weth_address = H160::from_str("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270").unwrap();
     let usd_weth_pair_address =
@@ -71,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Filtering pools below usd threshold");
 
-    let filtered_pools = cfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
+    let filtered_pools = dcfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
         filtered_pools,
         &dexes,
         usd_weth_pool,
