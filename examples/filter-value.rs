@@ -5,7 +5,7 @@ use ethers::{
     types::{H160, U256},
 };
 
-use cfmms::{
+use dcfmms::{
     dex::{Dex, DexVariant},
     pool::{Pool, UniswapV2Pool},
     sync,
