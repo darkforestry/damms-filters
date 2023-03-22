@@ -1,6 +1,6 @@
-# dcfmms-pool-filters
+# damm-filters
 
-A collection of filters to reduce invalid or poor quality pools on EVM chains.
+A collection of filters to reduce invalid or poor quality AMMs on EVM chains.
 
 
 
