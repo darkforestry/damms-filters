@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 
 use dcfmms::{dex::Dex, errors::CFMMError, pool::Pool};
 use ethers::{
@@ -39,15 +36,12 @@ pub async fn filter_pools_below_usd_threshold<M: Middleware>(
     )
     .await?;
 
-    let mut i = 0;
-    for weth_value in weth_values_in_pools {
+    for (i, weth_value) in weth_values_in_pools.iter().enumerate() {
         if (weth_value / U256_10_POW_18).as_u64() as f64 * weth_usd_price
             >= usd_value_in_pool_threshold
         {
             filtered_pools.push(pools[i]);
         }
-
-        i += 1;
     }
 
     Ok(filtered_pools)
@@ -74,13 +68,10 @@ pub async fn filter_pools_below_weth_threshold<M: Middleware>(
     )
     .await?;
 
-    let mut i = 0;
-    for weth_value in weth_values_in_pools {
-        if weth_value >= weth_value_in_pool_threshold {
+    for (i, weth_value) in weth_values_in_pools.iter().enumerate() {
+        if *weth_value >= weth_value_in_pool_threshold {
             filtered_pools.push(pools[i]);
         }
-
-        i += 1;
     }
 
     Ok(filtered_pools)
@@ -136,7 +127,7 @@ pub async fn get_weth_values_in_pools<M: Middleware>(
         if idx_to + step > pools.len() {
             idx_to = pools.len() - 1
         } else {
-            idx_to = idx_to + step;
+            idx_to += step;
         }
 
         progress_bar.inc(step as u64);
