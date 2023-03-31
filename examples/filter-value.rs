@@ -6,8 +6,12 @@ use ethers::{
 };
 
 use damms::{
-    dex::{Dex, DexVariant},
-    pool::{Pool, UniswapV2Pool},
+    amm::{
+        factory::Factory,
+        uniswap_v2::{factory::UniswapV2Factory, UniswapV2Pool},
+        uniswap_v3::factory::UniswapV3Factory,
+        AMM,
+    },
     sync,
 };
 
@@ -19,55 +23,49 @@ async fn main() -> Result<(), Box<dyn Error>> {
         std::env::var("POLYGON_MAINNET_ENDPOINT").expect("Could not get POLYGON_MAINNET_ENDPOINT");
     let provider = Arc::new(Provider::<Http>::try_from(rpc_endpoint).unwrap());
 
-    let dexes = vec![
+    let factories = vec![
         //Quickswap
-        Dex::new(
+        Factory::UniswapV2Factory(UniswapV2Factory::new(
             H160::from_str("0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32").unwrap(),
-            DexVariant::UniswapV2,
             4931780,
-            Some(300),
-        ),
+            300,
+        )),
         // Add Sushiswap
-        Dex::new(
+        Factory::UniswapV2Factory(UniswapV2Factory::new(
             H160::from_str("0xc35DADB65012eC5796536bD9864eD8773aBc74C4").unwrap(),
-            DexVariant::UniswapV2,
             11333218,
-            Some(300),
-        ),
+            300,
+        )),
         //Add apeswap
-        Dex::new(
+        Factory::UniswapV2Factory(UniswapV2Factory::new(
             H160::from_str("0xCf083Be4164828f00cAE704EC15a36D711491284").unwrap(),
-            DexVariant::UniswapV2,
             15298801,
-            Some(300),
-        ),
+            300,
+        )),
         //Add uniswap v3
-        Dex::new(
+        Factory::UniswapV3Factory(UniswapV3Factory::new(
             H160::from_str("0x1F98431c8aD98523631AE4a59f267346ea31F984").unwrap(),
-            DexVariant::UniswapV3,
             22757547,
-            None,
-        ),
+        )),
     ];
 
     //Sync pools
-    let pools =
-        sync::sync_pairs_with_throttle(dexes.clone(), 100000, provider.clone(), 7, None).await?;
+    let pools = sync::sync_amms(factories.clone(), provider.clone(), None).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
         vec![H160::from_str("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984").unwrap()];
 
     //Filter out blacklisted tokens
-    let filtered_pools =
-        dcfmms_pool_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
+    let filtered_amms =
+        damms_filters::filters::address::filter_blacklisted_tokens(pools, blacklisted_tokens);
 
     let weth_address = H160::from_str("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270").unwrap();
     let usd_weth_pair_address =
         H160::from_str("0xcd353F79d9FADe311fC3119B841e1f456b54e858").unwrap();
 
-    let usd_weth_pool = Pool::UniswapV2(
-        UniswapV2Pool::new_from_address(usd_weth_pair_address, provider.clone()).await?,
+    let usd_weth_pool = AMM::UniswapV2Pool(
+        UniswapV2Pool::new_from_address(usd_weth_pair_address, 300, provider.clone()).await?,
     );
 
     let weth_value_in_token_to_weth_pool_threshold =
@@ -75,9 +73,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Filtering pools below usd threshold");
 
-    let filtered_pools = dcfmms_pool_filters::filters::value::filter_pools_below_usd_threshold(
-        filtered_pools,
-        &dexes,
+    let filtered_amms = damms_filters::filters::value::filter_amms_below_usd_threshold(
+        filtered_amms,
+        &factories,
         usd_weth_pool,
         15000.00, //Setting usd_threshold to 10000.00 filters out any pool that contains less than $1m USD value
         weth_address,
@@ -87,8 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )
     .await?;
 
-    dbg!(filtered_pools.clone());
-    dbg!(filtered_pools.len());
+    println!("{:?}", filtered_amms);
 
     Ok(())
 }

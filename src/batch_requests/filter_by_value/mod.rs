@@ -1,4 +1,7 @@
-use damms::{dex::Dex, pool::Pool};
+use damms::amm::{
+    factory::{AutomatedMarketMakerFactory, Factory},
+    AutomatedMarketMaker, AMM,
+};
 use ethers::{
     abi::{ParamType, Token},
     prelude::abigen,
@@ -8,46 +11,46 @@ use ethers::{
 use std::sync::Arc;
 
 abigen!(
-    GetWethValueInPoolBatchRequest,
-    "src/batch_requests/filter_by_value/GetWethValueInPoolBatchRequest.json";
+    GetWethValueInAMMBatchRequest,
+    "src/batch_requests/filter_by_value/GetWethValueInAMMBatchRequest.json";
 );
 
-pub async fn get_weth_value_in_pool_batch_request<M: Middleware>(
-    pools: &[Pool],
-    dexes: &[Dex],
+pub async fn get_weth_value_in_amm_batch_request<M: Middleware>(
+    amms: &[AMM],
+    factories: &[Factory],
     weth: H160,
     weth_value_in_token_to_weth_pool_threshold: U256,
     middleware: Arc<M>,
-) -> Result<Vec<U256>, damms::errors::CFMMError<M>> {
+) -> Result<Vec<U256>, damms::errors::DAMMError<M>> {
     let mut weth_values_in_pools = vec![];
 
-    let pools = pools
+    let amms = amms
         .iter()
-        .map(|p| Token::Address(p.address()))
+        .map(|a| Token::Address(a.address()))
         .collect::<Vec<Token>>();
 
-    let dex_is_uni_v3 = dexes
+    let factory_is_uni_v3 = factories
         .iter()
         .map(|d| match d {
-            Dex::UniswapV2(_) => Token::Bool(false),
-            Dex::UniswapV3(_) => Token::Bool(true),
+            Factory::UniswapV2Factory(_) => Token::Bool(false),
+            Factory::UniswapV3Factory(_) => Token::Bool(true),
         })
         .collect::<Vec<Token>>();
 
-    let dexes = dexes
+    let factories = factories
         .iter()
-        .map(|d| Token::Address(d.factory_address()))
+        .map(|f| Token::Address(f.address()))
         .collect::<Vec<Token>>();
 
     let constructor_args = Token::Tuple(vec![
-        Token::Array(pools),
-        Token::Array(dexes),
-        Token::Array(dex_is_uni_v3),
+        Token::Array(amms),
+        Token::Array(factories),
+        Token::Array(factory_is_uni_v3),
         Token::Address(weth),
         Token::Uint(weth_value_in_token_to_weth_pool_threshold),
     ]);
 
-    let deployer = GetWethValueInPoolBatchRequest::deploy(middleware, constructor_args).unwrap();
+    let deployer = GetWethValueInAMMBatchRequest::deploy(middleware, constructor_args).unwrap();
     let return_data: Bytes = deployer.call_raw().await?;
 
     let return_data_tokens = ethers::abi::decode(
