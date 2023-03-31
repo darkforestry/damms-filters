@@ -22,4 +22,4 @@ regex = "1.7.1"
 
 
 # Dark Forestry
-damms = { git = "ssh://git@github.com/darkforestry/damms-rs.git", tag = "0.1.2" }
+damms = { git = "ssh://git@github.com/darkforestry/damms-rs.git", tag = "0.2.0" }
