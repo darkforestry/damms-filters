@@ -8,7 +8,7 @@ use ethers::{
     providers::Middleware,
     types::{H160, U256},
 };
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use spinoff::{spinners, Color, Spinner};
 
 use crate::batch_requests;
 
@@ -25,6 +25,12 @@ pub async fn filter_amms_below_usd_threshold<M: Middleware>(
     weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
     middleware: Arc<M>,
 ) -> Result<Vec<AMM>, DAMMError<M>> {
+    let spinner = Spinner::new(
+        spinners::Dots,
+        "Filtering AMMs below USD threshold...",
+        Color::Blue,
+    );
+
     let weth_usd_price = usd_weth_pool.calculate_price(weth)?;
 
     //Init a new vec to hold the filtered AMMs
@@ -47,6 +53,7 @@ pub async fn filter_amms_below_usd_threshold<M: Middleware>(
         }
     }
 
+    spinner.success("All AMMs filtered");
     Ok(filtered_amms)
 }
 
@@ -60,6 +67,12 @@ pub async fn filter_amms_below_weth_threshold<M: Middleware>(
     weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
     middleware: Arc<M>,
 ) -> Result<Vec<AMM>, DAMMError<M>> {
+    let spinner = Spinner::new(
+        spinners::Dots,
+        "Filtering AMMs below weth threshold...",
+        Color::Blue,
+    );
+
     let mut filtered_amms = vec![];
 
     let weth_values_in_pools = get_weth_values_in_amms(
@@ -77,6 +90,7 @@ pub async fn filter_amms_below_weth_threshold<M: Middleware>(
         }
     }
 
+    spinner.success("All AMMs filtered");
     Ok(filtered_amms)
 }
 
@@ -87,17 +101,6 @@ pub async fn get_weth_values_in_amms<M: Middleware>(
     weth_value_in_token_to_weth_pool_threshold: U256,
     middleware: Arc<M>,
 ) -> Result<Vec<U256>, DAMMError<M>> {
-    let multi_progress_bar = MultiProgress::new();
-    let progress_bar = multi_progress_bar.add(ProgressBar::new(0));
-    progress_bar.set_style(
-        ProgressStyle::with_template("{msg} {bar:40.cyan/blue} {pos:>7}/{len:7} Pools Filtered")
-            .unwrap()
-            .progress_chars("##-"),
-    );
-
-    progress_bar.set_length(amms.len() as u64);
-    progress_bar.set_message("Getting weth value in pools: ");
-
     //Init a new vec to hold the filtered pools
     let mut aggregate_weth_values_in_amms = vec![];
 
@@ -128,8 +131,6 @@ pub async fn get_weth_values_in_amms<M: Middleware>(
         } else {
             idx_to += step;
         }
-
-        progress_bar.inc(step as u64);
     }
 
     Ok(aggregate_weth_values_in_amms)
