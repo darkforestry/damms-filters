@@ -1,13 +1,13 @@
 [package]
 name = "damms-filters"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 
 [dependencies]
-ethers = { version = "2.0.0", features = ["abigen", "ws", "ipc"] }
+ethers = { version = "2.0.3", features = ["abigen", "ws", "ipc"] }
 tokio = { version = "1.21.0", features = ["full"] }
 futures = "0.3.24"
 thiserror = "1.0.36"
