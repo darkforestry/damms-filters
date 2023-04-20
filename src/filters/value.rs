@@ -49,7 +49,8 @@ pub async fn filter_amms_below_usd_threshold<M: Middleware>(
         if (weth_value / U256_10_POW_18).as_u64() as f64 * weth_usd_price
             >= usd_value_in_pool_threshold
         {
-            filtered_amms.push(amms[i]);
+            //TODO: using clone for now since we only do this once but find a better way in a future update
+            filtered_amms.push(amms[i].clone());
         }
     }
 
@@ -86,7 +87,8 @@ pub async fn filter_amms_below_weth_threshold<M: Middleware>(
 
     for (i, weth_value) in weth_values_in_pools.iter().enumerate() {
         if *weth_value >= weth_value_in_pool_threshold {
-            filtered_amms.push(amms[i]);
+            //TODO: using clone for now since we only do this once but find a better way in a future update
+            filtered_amms.push(amms[i].clone());
         }
     }
 
