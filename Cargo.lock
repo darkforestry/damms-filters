@@ -642,7 +642,7 @@ dependencies = [
 
 [[package]]
 name = "damms-filters"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "async-trait",
  "damms",
