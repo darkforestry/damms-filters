@@ -623,8 +623,8 @@ dependencies = [
 
 [[package]]
 name = "damms"
-version = "0.4.2"
-source = "git+ssh://git@github.com/darkforestry/damms-rs.git?tag=0.4.2#16a982031caae286c4836452f72f4a4e4728554a"
+version = "0.4.4"
+source = "git+ssh://git@github.com/darkforestry/damms-rs.git?tag=0.4.4#9ae937653aeabbab78519b19b643a86c9fb7768c"
 dependencies = [
  "async-trait",
  "ethers",
@@ -642,7 +642,7 @@ dependencies = [
 
 [[package]]
 name = "damms-filters"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "async-trait",
  "damms",
