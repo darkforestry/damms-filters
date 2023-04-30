@@ -1,13 +1,13 @@
 [package]
 name = "damms-filters"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 
 [dependencies]
-ethers = { version = "2.0.3", features = ["abigen", "ws", "ipc"] }
+ethers = { version = "2.0.4", features = ["abigen", "ws", "ipc"] }
 tokio = { version = "1.21.0", features = ["full"] }
 futures = "0.3.24"
 thiserror = "1.0.36"
@@ -22,4 +22,4 @@ spinoff = "0.7.0"
 
 
 # Dark Forestry
-damms = { git = "ssh://git@github.com/darkforestry/damms-rs.git", tag = "0.4.4" }
+damms = { git = "ssh://git@github.com/darkforestry/damms-rs.git", tag = "0.4.5" }
