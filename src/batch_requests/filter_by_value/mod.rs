@@ -34,6 +34,7 @@ pub async fn get_weth_value_in_amm_batch_request<M: Middleware>(
         .map(|d| match d {
             Factory::UniswapV2Factory(_) => Token::Bool(false),
             Factory::UniswapV3Factory(_) => Token::Bool(true),
+            Factory::IziSwapFactory(_) => Token::Bool(true) //TODO: This needs to be changed
         })
         .collect::<Vec<Token>>();
 
