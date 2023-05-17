@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     //Sync pools
-    let (pools, _synced_block) = sync::sync_amms(factories.clone(), provider.clone(), None).await?;
+    let (pools, _synced_block) = sync::sync_amms(factories.clone(), provider.clone(), None, 30000).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =

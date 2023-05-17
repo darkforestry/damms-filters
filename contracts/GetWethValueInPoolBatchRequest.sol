@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+import "./test/utils/Console.sol";
 
-import "./test/Console.sol";
 
 contract GetWethValueInPoolBatchRequest {
     uint256 internal constant Q96 = 0x1000000000000000000000000;
@@ -12,7 +12,7 @@ contract GetWethValueInPoolBatchRequest {
     constructor(
         address[] memory pools,
         address[] memory dexes,
-        bool[] memory dexIsUniV3,
+        uint8[] memory variants,
         address weth,
         uint256 wethInPoolThreshold
     ) {
@@ -28,8 +28,17 @@ contract GetWethValueInPoolBatchRequest {
 
             //Get the token0 and token1 from the pool
             if (!codeSizeIsZero(pools[i])) {
-                address token0 = IUniswapV2Pair(pools[i]).token0();
-                address token1 = IUniswapV2Pair(pools[i]).token1();
+
+                address token0; 
+                address token1;
+
+                if (variants[i] == 0 || variants[i]==1){
+                    token0 = IUniswapV2Pair(pools[i]).token0();
+                    token1 = IUniswapV2Pair(pools[i]).token1();
+                }else if (variants[i]==2){
+                    token0 = IiZiSwapPool(pools[i]).tokenX();
+                    token1 = IiZiSwapPool(pools[i]).tokenY();
+                }
 
                 if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
                     //Get the reserves from the pool
@@ -41,26 +50,28 @@ contract GetWethValueInPoolBatchRequest {
                     );
 
                     //Get the value of the tokens in the pool in weth
-                    uint256 token0WethValueInPool = getWethValueOfToken(
+                    uint256 token0WethValueInPool = token0 != weth ? getWethValueOfToken(
                         token0,
                         weth,
                         r0,
                         dexes,
-                        dexIsUniV3,
+                        variants,
                         wethInPoolThreshold
-                    );
+                    ) : r0;
                     // console.log("t0wvip", token0WethValueInPool);
 
-                    uint256 token1WethValueInPool = getWethValueOfToken(
+                    uint256 token1WethValueInPool = token0 != weth ? getWethValueOfToken(
                         token1,
                         weth,
                         r1,
                         dexes,
-                        dexIsUniV3,
+                        variants,
                         wethInPoolThreshold
-                    );
+                    ) : r1;
 
-                    // console.log("t1wvip", token1WethValueInPool);
+                    console.log("t1wvip", token1WethValueInPool);
+                    console.log("t0wvip", token0WethValueInPool);
+
 
                     if (
                         token0WethValueInPool != 0 && token1WethValueInPool != 0
@@ -80,7 +91,6 @@ contract GetWethValueInPoolBatchRequest {
             }
         }
 
-        console.log("wvip", wethValueInPools[0]);
 
         // insure abi encoding, not needed here but increase reusability for different return types
         // note: abi.encode add a first 32 bytes word with the address of the original data
@@ -96,7 +106,7 @@ contract GetWethValueInPoolBatchRequest {
 
     function badPool(address lp) internal returns (bool) {
         //If the pool is v3
-        if (!lpIsNotUniV3(lp)) {
+        if (lpIsUniV3(lp)) {
             if (IUniswapV3PoolState(lp).liquidity() == 0) {
                 return true;
             }
@@ -110,7 +120,7 @@ contract GetWethValueInPoolBatchRequest {
         address weth,
         uint256 amount,
         address[] memory dexes,
-        bool[] memory dexIsUniV3,
+        uint8[] memory variant,
         uint256 wethInPoolThreshold
     ) internal returns (uint256) {
         //If the token is weth, the amount is the amount of weth in the pool for that token
@@ -136,7 +146,7 @@ contract GetWethValueInPoolBatchRequest {
                         token,
                         weth,
                         dexes[i],
-                        dexIsUniV3[i],
+                        variant[i],
                         wethInPoolThreshold
                     );
 
@@ -158,11 +168,9 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     ///Does not normalize to 18 decimals
-    function calculateV3VirtualReserves(address pool)
-        internal
-        view
-        returns (uint256 r_0, uint256 r_1)
-    {
+    function calculateV3VirtualReserves(
+        address pool
+    ) internal view returns (uint256 r_0, uint256 r_1) {
         (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
         uint128 liquidity = IUniswapV3PoolState(pool).liquidity();
 
@@ -171,14 +179,14 @@ contract GetWethValueInPoolBatchRequest {
         }
 
         unchecked {
-            uint256 sqrtPriceInv = (2**192 / sqrtPriceX96);
+            uint256 sqrtPriceInv = (2 ** 192 / sqrtPriceX96);
 
             uint256 lo_r0 = (uint256(sqrtPriceInv) *
-                (uint256(liquidity) & (2**64))) >> 96;
+                (uint256(liquidity) & (2 ** 64))) >> 96;
             uint256 hi_r0 = (uint256(sqrtPriceInv) *
                 (uint256(liquidity) >> 96));
             uint256 lo_r1 = (uint256(sqrtPriceX96) *
-                (uint256(liquidity) & (2**64))) >> 96;
+                (uint256(liquidity) & (2 ** 64))) >> 96;
             uint256 hi_r1 = (uint256(sqrtPriceX96) *
                 (uint256(liquidity) >> 96));
 
@@ -196,10 +204,10 @@ contract GetWethValueInPoolBatchRequest {
         address token,
         address weth,
         address dexFactory,
-        bool isUniV3,
+        uint8 variant,
         uint256 wethInPoolThreshold
     ) internal returns (uint128) {
-        if (isUniV3) {
+        if (variant == 1) {
             uint16[3] memory feeTiers = [500, 3000, 10000];
             for (uint256 i = 0; i < feeTiers.length; ++i) {
                 address pairAddress = IUniswapV3Factory(dexFactory).getPool(
@@ -211,7 +219,7 @@ contract GetWethValueInPoolBatchRequest {
                 if (pairAddress != ADDRESS_ZERO) {
                     ///Check here if the weth in pool threshold is met
                     uint128 price = getTokenToWethPriceFromPool(
-                        isUniV3,
+                        variant,
                         token,
                         weth,
                         pairAddress,
@@ -223,7 +231,7 @@ contract GetWethValueInPoolBatchRequest {
                     }
                 }
             }
-        } else {
+        } else if (variant == 0) {
             bool tokenIsToken0 = token < weth;
 
             address pairAddress = IUniswapV2Factory(dexFactory).getPair(
@@ -233,7 +241,7 @@ contract GetWethValueInPoolBatchRequest {
 
             if (pairAddress != ADDRESS_ZERO) {
                 uint128 price = getTokenToWethPriceFromPool(
-                    isUniV3,
+                    variant,
                     token,
                     weth,
                     pairAddress,
@@ -244,6 +252,30 @@ contract GetWethValueInPoolBatchRequest {
                     return price;
                 }
             }
+        } else if (variant == 2) {
+            uint16[4] memory feeTiers = [100, 400, 2000, 10000];
+            for (uint256 i = 0; i < feeTiers.length; ++i) {
+                address pairAddress = IiZiSwapFactory(dexFactory).pool(
+                    token < weth ? token : weth,
+                    token < weth ? weth : token,
+                    feeTiers[i]
+                );
+
+                if (pairAddress != ADDRESS_ZERO) {
+                    ///Check here if the weth in pool threshold is met
+                    uint128 price = getTokenToWethPriceFromPool(
+                        variant,
+                        token,
+                        weth,
+                        pairAddress,
+                        wethInPoolThreshold
+                    );
+
+                    if (price != 0) {
+                        return price;
+                    }
+                }
+            }
         }
 
         //We set the price to 1 so that we know that the token to weth pairing does not exist or is not valid
@@ -252,14 +284,14 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     function getTokenToWethPriceFromPool(
-        bool isUniV3,
+        uint8 variant,
         address token,
         address weth,
         address pool,
         uint256 wethLiquidityThreshold
     ) internal returns (uint128 price) {
         bool tokenIsToken0 = token < weth;
-        if (!isUniV3) {
+        if (variant == 0) {
             (uint256 r_0, uint256 r_1) = getNormalizedReserves(
                 pool,
                 token,
@@ -282,13 +314,18 @@ contract GetWethValueInPoolBatchRequest {
                 }
             }
 
-            price = divuu(
-                tokenIsToken0 ? r_1 : r_0,
-                tokenIsToken0 ? r_0 : r_1
+            price = divuu(tokenIsToken0 ? r_1 : r_0, tokenIsToken0 ? r_0 : r_1);
+        } else if (variant == 1) {
+            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool)
+                .slot0();
+            price = uint128(
+                fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth) >> 64
             );
-        }else {
-            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(pool).slot0();
-            price = uint128(fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth)>>64);
+        } else if (variant == 2) {
+            (uint160 sqrtPriceX96, , , , , , , ) = IiZiSwapPool(pool).state();
+            price = uint128(
+                fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth) >> 64
+            );
         }
 
         // console.log("price");
@@ -296,8 +333,6 @@ contract GetWethValueInPoolBatchRequest {
 
         //Add the price to the tokenToWeth price mapping
         tokenToWethPrices[token] = price;
-
-        
     }
 
     function getReserves(
@@ -312,12 +347,7 @@ contract GetWethValueInPoolBatchRequest {
         uint256 r_x;
         uint256 r_y;
 
-        if (lpIsNotUniV3(lp)) {
-            (uint112 r_x_112, uint112 r_y_112, ) = IUniswapV2Pair(lp)
-                .getReserves();
-            r_x = r_x_112;
-            r_y = r_y_112;
-        } else {
+        if (lpIsUniV3(lp)) {
             (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
                 token0,
                 lp
@@ -336,6 +366,30 @@ contract GetWethValueInPoolBatchRequest {
                     r_x = lpBalanceOfToken1;
                 }
             }
+        } else if (lpIsIziSwap(lp)) {
+            (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
+                token0,
+                lp
+            );
+            (uint256 lpBalanceOfToken1, bool success1) = getBalanceOfUnsafe(
+                token1,
+                lp
+            );
+
+            if (success0 && success1) {
+                if (token0 < token1) {
+                    r_x = lpBalanceOfToken0;
+                    r_y = lpBalanceOfToken1;
+                } else {
+                    r_y = lpBalanceOfToken0;
+                    r_x = lpBalanceOfToken1;
+                }
+            }
+        } else {
+            (uint112 r_x_112, uint112 r_y_112, ) = IUniswapV2Pair(lp)
+                .getReserves();
+            r_x = r_x_112;
+            r_y = r_y_112;
         }
 
         return (r_x, r_y);
@@ -370,11 +424,11 @@ contract GetWethValueInPoolBatchRequest {
 
         if (t0s && t1s) {
             r_x = token0Decimals <= 18
-                ? x * (10**(18 - token0Decimals))
-                : x / (10**(token0Decimals - 18));
+                ? x * (10 ** (18 - token0Decimals))
+                : x / (10 ** (token0Decimals - 18));
             r_y = token1Decimals <= 18
-                ? y * (10**(18 - token1Decimals))
-                : y / (10**(token1Decimals - 18));
+                ? y * (10 ** (18 - token1Decimals))
+                : y / (10 ** (token1Decimals - 18));
         }
     }
 
@@ -390,8 +444,9 @@ contract GetWethValueInPoolBatchRequest {
                 int8(IERC20(token1).decimals());
             ///@notice Square the sqrtPrice ratio and normalize the value based on decimalShift.
             uint256 priceSquaredX96 = decimalShift < 0
-                ? uint256(sqrtPriceX96)**2 / uint256(10)**(uint8(-decimalShift))
-                : uint256(sqrtPriceX96)**2 * 10**uint8(decimalShift);
+                ? uint256(sqrtPriceX96) ** 2 /
+                    uint256(10) ** (uint8(-decimalShift))
+                : uint256(sqrtPriceX96) ** 2 * 10 ** uint8(decimalShift);
 
             ///@notice The first value is a Q96 representation of p_token0, the second is 128X fixed point representation of p_token1.
             uint256 priceSquaredShiftQ96 = token0IsReserve0
@@ -492,10 +547,9 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     /// @notice returns true as the second return value if the token decimals can be successfully retrieved
-    function getTokenDecimalsUnsafe(address token)
-        internal
-        returns (uint8, bool)
-    {
+    function getTokenDecimalsUnsafe(
+        address token
+    ) internal returns (uint8, bool) {
         (bool tokenDecimalsSuccess, bytes memory tokenDecimalsData) = token
             .call(abi.encodeWithSignature("decimals()"));
 
@@ -519,10 +573,10 @@ contract GetWethValueInPoolBatchRequest {
     }
 
     /// @notice returns true as the second return value if the token decimals can be successfully retrieved
-    function getBalanceOfUnsafe(address token, address targetAddress)
-        internal
-        returns (uint256, bool)
-    {
+    function getBalanceOfUnsafe(
+        address token,
+        address targetAddress
+    ) internal returns (uint256, bool) {
         (bool balanceOfSuccess, bytes memory balanceOfData) = token.call(
             abi.encodeWithSignature("balanceOf(address)", targetAddress)
         );
@@ -575,7 +629,7 @@ contract GetWethValueInPoolBatchRequest {
     ///@notice Helper function to determine if a pool address is Uni V2 compatible.
     ///@param lp - Pair address.
     ///@return bool Indicator whether the pool is not Uni V3 compatible.
-    function lpIsNotUniV3(address lp) internal returns (bool) {
+    function lpIsUniV3(address lp) internal returns (bool) {
         bool success;
         assembly {
             //store the function sig for  "fee()"
@@ -596,7 +650,34 @@ contract GetWethValueInPoolBatchRequest {
         }
         ///@notice return the opposite of success, meaning if the call succeeded, the address is univ3, and we should
         ///@notice indicate that lpIsNotUniV3 is false
-        return !success;
+        return success;
+    }
+
+    ///@notice Helper function to determine if a pool address is iZi compatible.
+    ///@param lp - Pair address.
+    ///@return bool Indicator whether the pool is not Uni V3 compatible.
+    function lpIsIziSwap(address lp) internal returns (bool) {
+        bool success;
+        assembly {
+            //store the function sig for  "tokenX()"
+            mstore(
+                0x00,
+                0x16dc165b00000000000000000000000000000000000000000000000000000000
+            )
+
+            success := call(
+                gas(), // gas remaining
+                lp, // destination address
+                0, // no ether
+                0x00, // input buffer (starts after the first 32 bytes in the `data` array)
+                0x04, // input length (loaded from the first 32 bytes in the `data` array)
+                0x00, // output buffer
+                0x00 // output length
+            )
+        }
+        ///@notice return the opposite of success, meaning if the call succeeded, the address is univ3, and we should
+        ///@notice indicate that the lp is iZiSwap
+        return success;
     }
 
     function codeSizeIsZero(address target) internal view returns (bool) {
@@ -628,10 +709,10 @@ interface IERC20 {
 }
 
 interface IUniswapV2Factory {
-    function getPair(address tokenA, address tokenB)
-        external
-        view
-        returns (address pair);
+    function getPair(
+        address tokenA,
+        address tokenB
+    ) external view returns (address pair);
 }
 
 interface IUniswapV2Pair {
@@ -644,11 +725,7 @@ interface IUniswapV2Pair {
     function getReserves()
         external
         view
-        returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
-        );
+        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 }
 
 interface IUniswapV3PoolState {
@@ -666,4 +743,53 @@ interface IUniswapV3PoolState {
         );
 
     function liquidity() external view returns (uint128);
+}
+
+interface IiZiSwapPool {
+    /// @notice Returns sqrt(1.0001), in 96 bit fixpoint number.
+    function sqrtRate_96() external view returns (uint160);
+
+    /// @notice State values of pool.
+    /// @return sqrtPrice_96 a 96 fixpoing number describe the sqrt value of current price(tokenX/tokenY)
+    /// @return currentPoint the current point of the pool, 1.0001 ^ currentPoint = price
+    /// @return observationCurrentIndex the index of the last oracle observation that was written,
+    /// @return observationQueueLen the current maximum number of observations stored in the pool,
+    /// @return observationNextQueueLen the next maximum number of observations, to be updated when the observation.
+    /// @return locked whether the pool is locked (only used for checking reentrance)
+    /// @return liquidity liquidity on the currentPoint (currX * sqrtPrice + currY / sqrtPrice)
+    /// @return liquidityX liquidity of tokenX
+    function state()
+        external
+        view
+        returns (
+            uint160 sqrtPrice_96,
+            int24 currentPoint,
+            uint16 observationCurrentIndex,
+            uint16 observationQueueLen,
+            uint16 observationNextQueueLen,
+            bool locked,
+            uint128 liquidity,
+            uint128 liquidityX
+        );
+
+    function tokenX()
+        external
+        view
+        returns (
+            address
+        );
+    function tokenY()
+        external
+        view
+        returns (
+            address
+        );
+}
+
+interface IiZiSwapFactory {
+    function pool(
+        address tokenX,
+        address tokenY,
+        uint24 fee
+    ) external view returns (address);
 }
