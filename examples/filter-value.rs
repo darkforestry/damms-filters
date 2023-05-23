@@ -50,7 +50,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     //Sync pools
-    let (pools, _synced_block) = sync::sync_amms(factories.clone(), provider.clone(), None).await?;
+    let (pools, _synced_block) =
+        sync::sync_amms(factories.clone(), provider.clone(), None, 10000).await?;
 
     //Create a list of blacklisted tokens
     let blacklisted_tokens =
@@ -81,6 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         weth_address,
         // When getting token to weth price to determine weth value in pool, dont use price with weth reserves with less than $1000 USD worth
         weth_value_in_token_to_weth_pool_threshold,
+        200,
         provider.clone(),
     )
     .await?;

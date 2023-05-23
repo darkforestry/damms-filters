@@ -23,6 +23,7 @@ pub async fn filter_amms_below_usd_threshold<M: Middleware>(
     usd_value_in_pool_threshold: f64, // This is the threshold where we will filter out any pool with less value than this
     weth: H160,
     weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
+    step: usize,
     middleware: Arc<M>,
 ) -> Result<Vec<AMM>, DAMMError<M>> {
     let spinner = Spinner::new(
@@ -41,6 +42,7 @@ pub async fn filter_amms_below_usd_threshold<M: Middleware>(
         factories,
         weth,
         weth_value_in_token_to_weth_pool_threshold,
+        step,
         middleware,
     )
     .await?;
@@ -66,6 +68,7 @@ pub async fn filter_amms_below_weth_threshold<M: Middleware>(
     weth: H160,
     weth_value_in_pool_threshold: U256, // This is the threshold where we will filter out any pool with less value than this
     weth_value_in_token_to_weth_pool_threshold: U256, //This is the threshold where we will ignore any token price < threshold during batch calls
+    step: usize,
     middleware: Arc<M>,
 ) -> Result<Vec<AMM>, DAMMError<M>> {
     let spinner = Spinner::new(
@@ -81,6 +84,7 @@ pub async fn filter_amms_below_weth_threshold<M: Middleware>(
         factories,
         weth,
         weth_value_in_token_to_weth_pool_threshold,
+        step,
         middleware,
     )
     .await?;
@@ -101,12 +105,11 @@ pub async fn get_weth_values_in_amms<M: Middleware>(
     factories: &[Factory],
     weth: H160,
     weth_value_in_token_to_weth_pool_threshold: U256,
+    step: usize,
     middleware: Arc<M>,
 ) -> Result<Vec<U256>, DAMMError<M>> {
     //Init a new vec to hold the filtered pools
     let mut aggregate_weth_values_in_amms = vec![];
-
-    let step = 300; //max batch size for this call until codesize is too large
 
     let mut idx_from = 0;
     let mut idx_to = if step > amms.len() { amms.len() } else { step };
