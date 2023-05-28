@@ -588,29 +588,6 @@ contract GetWethValueInPoolBatchRequest {
     function getLpVariant(address lp) internal returns (uint8) {
         bool success;
         assembly {
-            //store the function sig for  "fee()"
-            mstore(
-                0x00,
-                0xddca3f4300000000000000000000000000000000000000000000000000000000
-            )
-
-            success := call(
-                gas(), // gas remaining
-                lp, // destination address
-                0, // no ether
-                0x00, // input buffer (starts after the first 32 bytes in the `data` array)
-                0x04, // input length (loaded from the first 32 bytes in the `data` array)
-                0x00, // output buffer
-                0x00 // output length
-            )
-        }
-        ///@notice return the opposite of success, meaning if the call succeeded, the address is univ3, and we should
-        ///@notice indicate that lpIsNotUniV3 is false
-        if (success) {
-            return 1;
-        }
-
-        assembly {
             //store the function sig for  "getReserves()"
             mstore(
                 0x00,
@@ -627,11 +604,32 @@ contract GetWethValueInPoolBatchRequest {
                 0x00 // output length
             )
         }
-
         if (success) {
             return 0;
+        }
+
+        assembly {
+            //store the function sig for  "tokenX()"
+            mstore(
+                0x00,
+                0x16dc165b00000000000000000000000000000000000000000000000000000000
+            )
+
+            success := call(
+                gas(), // gas remaining
+                lp, // destination address
+                0, // no ether
+                0x00, // input buffer (starts after the first 32 bytes in the `data` array)
+                0x04, // input length (loaded from the first 32 bytes in the `data` array)
+                0x00, // output buffer
+                0x00 // output length
+            )
+        }
+        
+        if (success) {
+            return 2;
         } else {
-            return 2; //NOTE: This will for sure break the contract if we pass in another variant other than izumi into the contract with this method.
+            return 1; //NOTE: This will for sure break the contract if we pass in another variant other than izumi into the contract with this method.
         }
     }
 
