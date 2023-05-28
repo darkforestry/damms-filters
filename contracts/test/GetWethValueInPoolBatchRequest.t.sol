@@ -32,6 +32,6 @@ contract GasTest is DSTest {
                 wethInPoolThreshold
             );
 
-        console.logBytes(address(batchContract).code);
+        // console.logBytes(address(batchContract).code);
     }
 }
