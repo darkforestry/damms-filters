@@ -643,7 +643,7 @@ contract GetWethValueInPoolBatchRequest {
                 0x00 // output length
             )
         }
-        
+
         if (success) {
             return 2;
         } else {
