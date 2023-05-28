@@ -17,8 +17,8 @@ contract GasTest is DSTest {
         // dexes[0] = 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32;
         dexes[0] = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
         // dexes[0] = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-        bool[] memory dexIsUniV3 = new bool[](1);
-        dexIsUniV3[0] = true;
+        uint8[] memory dexVariant = new uint8[](1);
+        dexVariant[0] = 1;
         // dexIsUniV3[1] = false;
         // dexIsUniV3[0] = true;
         address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -27,7 +27,7 @@ contract GasTest is DSTest {
         GetWethValueInPoolBatchRequest batchContract = new GetWethValueInPoolBatchRequest(
                 pools,
                 dexes,
-                dexIsUniV3,
+                dexVariant,
                 weth,
                 wethInPoolThreshold
             );
