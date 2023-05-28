@@ -346,6 +346,24 @@ contract GetWethValueInPoolBatchRequest {
             }
         } else {
             //TODO: Add izumi logic to get token balances.
+            (uint256 lpBalanceOfToken0, bool success0) = getBalanceOfUnsafe(
+                token0,
+                lp
+            );
+            (uint256 lpBalanceOfToken1, bool success1) = getBalanceOfUnsafe(
+                token1,
+                lp
+            );
+
+            if (success0 && success1) {
+                if (token0 < token1) {
+                    r_x = lpBalanceOfToken0;
+                    r_y = lpBalanceOfToken1;
+                } else {
+                    r_y = lpBalanceOfToken0;
+                    r_x = lpBalanceOfToken1;
+                }
+            }
         }
 
         return (r_x, r_y);
@@ -423,7 +441,7 @@ contract GetWethValueInPoolBatchRequest {
     /// @param x uint256 unsigned integer
     /// @param y uint256 unsigned integer
     /// @return unsigned 64.64 fixed point number
-    function divuu(uint256 x, uint256 y) internal view returns (uint128) {
+    function divuu(uint256 x, uint256 y) internal pure returns (uint128) {
         unchecked {
             if (y == 0) return 0;
 
