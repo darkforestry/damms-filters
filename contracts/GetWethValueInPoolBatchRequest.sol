@@ -26,19 +26,8 @@ contract GetWethValueInPoolBatchRequest {
 
             //Get the token0 and token1 from the pool
             if (!codeSizeIsZero(pools[i])) {
-                uint8 poolVariant = getLpVariant(pools[i]);
-                address token0;
-                address token1;
-                {
-                    if (poolVariant == 0 || poolVariant == 1) {
-                        token0 = IUniswapV2Pair(pools[i]).token0(); //TODO: Add izumi support here
-                        token1 = IUniswapV2Pair(pools[i]).token1(); //TODO: Add izumi support here
-                    } else {
-                        //TODO: Get tokenX, tokenY from izumi pool interface
-                        token0 = IiZiSwapPool(pools[i]).tokenX();
-                        token1 = IiZiSwapPool(pools[i]).tokenY();
-                    }
-                }
+                (address token0, address token1) = getTokens(pools[i]);
+
                 if (!codeSizeIsZero(token0) && !codeSizeIsZero(token1)) {
                     //Get the reserves from the pool
 
@@ -99,6 +88,21 @@ contract GetWethValueInPoolBatchRequest {
             // up to the end of the memory used
             let dataStart := add(abiEncodedData, 0x20)
             return(dataStart, sub(msize(), dataStart))
+        }
+    }
+
+    function getTokens(
+        address lp
+    ) internal returns (address token0, address token1) {
+        uint8 poolVariant = getLpVariant(lp);
+
+        if (poolVariant == 0 || poolVariant == 1) {
+            token0 = IUniswapV2Pair(lp).token0(); //TODO: Add izumi support here
+            token1 = IUniswapV2Pair(lp).token1(); //TODO: Add izumi support here
+        } else {
+            //TODO: Get tokenX, tokenY from izumi pool interface
+            token0 = IiZiSwapPool(lp).tokenX();
+            token1 = IiZiSwapPool(lp).tokenY();
         }
     }
 
@@ -290,8 +294,10 @@ contract GetWethValueInPoolBatchRequest {
             );
         } else {
             //TODO: Add izumi case
-            (uint160 sqrtPriceX96,,,,,,,)= IiZiSwapPool(pool).state();
-            price = uint128(fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth) >>64);
+            (uint160 sqrtPriceX96, , , , , , , ) = IiZiSwapPool(pool).state();
+            price = uint128(
+                fromSqrtX96(sqrtPriceX96, tokenIsToken0, token, weth) >> 64
+            );
         }
 
         // console.log("price");
