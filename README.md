@@ -1,8 +1,8 @@
 # damms-filters
 
+**[Note: `damms-filters` has been migrated into `amms` and this repo has been archived.](https://github.com/darkforestry/amms-rs)**
+
 A collection of filters to reduce invalid or poor quality AMMs on EVM chains.
-
-
 
 ## Value Filters
 Note: A good `weth_value_in_token_to_weth_pool_threshold` is a setting with a $USD value > $1000 at least. Lower than this, you are getting pools that could have poor liquidity and show inflated prices.
