@@ -29,12 +29,12 @@ pub async fn get_weth_value_in_amm_batch_request<M: Middleware>(
         .map(|a| Token::Address(a.address()))
         .collect::<Vec<Token>>();
 
-    let factory_is_uni_v3 = factories
+    let dexVariants = factories
         .iter()
         .map(|d| match d {
-            Factory::UniswapV2Factory(_) => Token::Bool(false),
-            Factory::UniswapV3Factory(_) => Token::Bool(true),
-            Factory::IziSwapFactory(_) => Token::Bool(true) //TODO: This needs to be changed
+            Factory::UniswapV2Factory(_) => Token::Uint(U256::zero()),
+            Factory::UniswapV3Factory(_) => Token::Uint(U256::from(1)),
+            Factory::IziSwapFactory(_) => Token::Uint(U256::from(2)) //TODO: This needs to be changed
         })
         .collect::<Vec<Token>>();
 
@@ -46,7 +46,7 @@ pub async fn get_weth_value_in_amm_batch_request<M: Middleware>(
     let constructor_args = Token::Tuple(vec![
         Token::Array(amms),
         Token::Array(factories),
-        Token::Array(factory_is_uni_v3),
+        Token::Array(dexVariants),
         Token::Address(weth),
         Token::Uint(weth_value_in_token_to_weth_pool_threshold),
     ]);
